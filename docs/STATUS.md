@@ -7,6 +7,10 @@ The curated Linux export passed 204 Node tests and 71 Python tests, plus
 ESLint, scoped Ruff, compile checks and a Gitleaks directory scan. Packaging
 assertions include synthetic fixtures and attribution, not just runtime modules.
 GitHub CI repeats the offline checks and scans the entire published history.
+An additional public-artifact scan regression brings the Node suite to 205 tests.
+The first clean GitHub runner exposed an accidental `codex --version` dependency
+in a mocked comparison test; version probing is now injected in that test, so
+the offline suite does not require Codex or its credentials to be installed.
 
 | Dimension | Evidence and limits |
 | --- | --- |

@@ -69,8 +69,10 @@ test('persisted comparison stops after missing usage and refuses rerun without a
   await writeFile(join(home, 'config.json'), JSON.stringify(config), { mode: 0o600 });
   let calls = 0;
   const options = { home, acknowledge: true, selectedSettings: async () => ({ model: 'mock', model_reasoning_effort: 'low' }),
+    nativeVersion: async () => 'synthetic-offline-version',
     runNative: async () => { calls++; return { status: 'blocked', error: 'native_usage_unavailable', usage: null, answer: null }; } };
   const result = await runComparison(options);
+  assert.equal(result.nativeVersion, 'synthetic-offline-version');
   assert.equal(calls, 1); assert.equal(result.runs.length, 1); assert.equal(result.unknownUsageRuns, 1);
   assert.equal(result.status, 'blocked'); assert.equal(result.error, 'native_usage_unavailable');
   assert.deepEqual(await readPrivateJson(join(home, 'config.json')), config);

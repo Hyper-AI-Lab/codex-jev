@@ -38,7 +38,9 @@ export function comparisonPrompt(task, root, arm) {
     'Ranges already include verified hashes and line numbers; use exact reads and omission listing when needed, not just to repeat included text. Native reads remain available. Absence from a selection proves nothing.\n';
 }
 
-export async function runComparison({ home = defaultHome(), acknowledge = false, runNative = nativeRun, selectedSettings = settings, probe = comparisonProbe } = {}) {
+export async function runComparison({ home = defaultHome(), acknowledge = false, runNative = nativeRun, selectedSettings = settings,
+  nativeVersion = async () => (await exec('codex', ['--version'], { timeout: 10000, maxBuffer: 4096 })).stdout.trim(),
+  probe = comparisonProbe } = {}) {
   if (!acknowledge) throw new SafeError('acknowledgment_required', 'The fixed four-run comparison requires explicit usage acknowledgment.');
   return withEvaluationLock(home, async () => {
     const pointer = join(home, 'hardening-comparison-latest.json');
@@ -60,7 +62,7 @@ export async function runComparison({ home = defaultHome(), acknowledge = false,
     const path = join(runDir, 'report.json');
     const report = { kind: manifest.kind, revision, manifestHash, selected, started: new Date().toISOString(),
       status: 'preflight', runs: [], local: [], probes: [], nativeInputLimit: 100000, maxNativeRuns: 4,
-      accountCostMeasured: false, effectivenessQualified: false, nativeVersion: (await exec('codex', ['--version'])).stdout.trim() };
+      accountCostMeasured: false, effectivenessQualified: false, nativeVersion: await nativeVersion() };
     await savePrivate(path, report); await savePrivate(pointer, { reportPath: path, status: report.status });
     const assertUnchanged = async () => {
       if (await lstat(join(home, 'halt.json')).catch(() => null)) throw new SafeError('halted', 'Shared quota halt is active.');
