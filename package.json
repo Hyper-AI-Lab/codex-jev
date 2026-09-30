@@ -12,8 +12,8 @@
   "bin": { "codex-jev": "./scripts/investigate.mjs" },
   "files": [
     "dist/*.mjs", "dist/*.LEGAL.txt", "src/*.mjs", "scripts/*.mjs",
-    "runtime/*.py", "benchmarks/*.mjs", "benchmarks/fixtures", "benchmarks/evaluation-v2.manifest.json", "tests/*.mjs", "docs/*.md", "docs/assets/*.svg",
-    "README.md", "LICENSE", "NOTICE.md", "THIRD_PARTY_NOTICES.txt", "SECURITY.md", "eslint.config.mjs", ".mcp.json"
+    "runtime/*.py", "benchmarks/*.mjs", "benchmarks/README.md", "benchmarks/fixtures", "benchmarks/evaluation-v2.manifest.json", "tests/*.mjs", "docs/*.md", "docs/assets/*.svg",
+    "README.md", "LICENSE", "NOTICE.md", "THIRD_PARTY_NOTICES.txt", "SECURITY.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "CHANGELOG.md", "eslint.config.mjs", ".mcp.json"
   ],
   "scripts": {
     "build": "esbuild src/mcp-server.mjs --bundle --platform=node --format=esm --target=node22 --legal-comments=external --outfile=dist/server.mjs && esbuild scripts/live-smoke.mjs --bundle --platform=node --format=esm --target=node22 --legal-comments=external --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" --outfile=dist/live-smoke.mjs",
