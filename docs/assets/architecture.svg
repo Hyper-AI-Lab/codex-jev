@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
+  <title id="title">Codex Jev</title>
+  <desc id="desc">Local evidence discovery, optional Jev ranking, and exact context returned to your chosen coding model. Recovery and accounting stay on your host.</desc>
+  <rect width="1200" height="420" fill="#111815"/>
+  <rect x="44" y="46" width="8" height="63" fill="#78e8ae"/>
+  <g font-family="Arial,Helvetica,sans-serif">
+    <text x="73" y="94" font-size="49" font-weight="700" fill="#f4f8f6">Codex Jev</text>
+    <text x="46" y="151" font-size="24" fill="#b6c6bf">Find the evidence. Keep your coding model.</text>
+    <g fill="#1d2924" stroke="#455950" stroke-width="1.5">
+      <rect x="46" y="213" width="286" height="114" rx="6"/>
+      <rect x="457" y="213" width="286" height="114" rx="6"/>
+      <rect x="868" y="213" width="286" height="114" rx="6"/>
+    </g>
+    <g fill="#f4f8f6" font-size="24" font-weight="700">
+      <text x="70" y="256">Local discovery</text><text x="481" y="256">Jev ranking</text><text x="892" y="256">Exact evidence</text>
+    </g>
+    <g fill="#b6c6bf" font-size="18">
+      <text x="70" y="292">Authorize. Scope. Redact.</text><text x="481" y="292">Optional. Bounded. Cached.</text><text x="892" y="292">Sources. Ranges. Recovery.</text>
+    </g>
+    <g stroke="#78e8ae" stroke-width="3" fill="none">
+      <path d="M352 270h79m-12-9 12 9-12 9M763 270h79m-12-9 12 9-12 9"/>
+    </g>
+    <text x="46" y="382" font-size="17" fill="#b6c6bf">LOCAL STDIO MCP</text>
+    <text x="292" y="382" font-size="17" fill="#b6c6bf">NO MODEL SWITCHING</text>
+    <text x="575" y="382" font-size="17" fill="#b6c6bf">MIT LICENSE</text>
+    <text x="973" y="382" font-size="17" fill="#78e8ae">HYPER AI LAB</text>
+  </g>
+</svg>

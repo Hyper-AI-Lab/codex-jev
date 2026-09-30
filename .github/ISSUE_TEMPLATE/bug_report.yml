@@ -1,0 +1,26 @@
+name: Bug report
+description: Report a reproducible defect using sanitized or synthetic data.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: "Do not include credentials, private source, conversations or recovery files. Report vulnerabilities privately through the Security tab."
+  - type: input
+    id: version
+    attributes:
+      label: Version and environment
+      description: Release/commit, OS, Node/Python versions and Codex client version.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Synthetic reproduction
+      description: Smallest safe steps and expected versus actual behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: state
+    attributes:
+      label: Relevant sanitized state
+      description: Selection mode, error code and loaded build only. Do not attach private status dumps.

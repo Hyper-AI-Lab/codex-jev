@@ -1,0 +1,33 @@
+{
+  "name": "@hyper-ai-lab/codex-jev",
+  "version": "0.4.0-beta.1",
+  "description": "Evidence selection, bounded Jev reranking, and recoverable context for Codex. Keep your coding model.",
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=22.13" },
+  "repository": { "type": "git", "url": "https://github.com/Hyper-AI-Lab/codex-jev.git" },
+  "homepage": "https://github.com/Hyper-AI-Lab/codex-jev#readme",
+  "bugs": { "url": "https://github.com/Hyper-AI-Lab/codex-jev/issues" },
+  "keywords": ["codex", "mcp", "jev", "typesafe", "context-engineering", "reranking", "developer-tools"],
+  "bin": { "codex-jev": "./scripts/investigate.mjs" },
+  "files": [
+    "dist/*.mjs", "dist/*.LEGAL.txt", "src/*.mjs", "scripts/*.mjs",
+    "runtime/*.py", "benchmarks/*.mjs", "benchmarks/fixtures", "benchmarks/evaluation-v2.manifest.json", "tests/*.mjs", "docs/*.md", "docs/assets/*.svg",
+    "README.md", "LICENSE", "NOTICE.md", "THIRD_PARTY_NOTICES.txt", "SECURITY.md", "eslint.config.mjs", ".mcp.json"
+  ],
+  "scripts": {
+    "build": "esbuild src/mcp-server.mjs --bundle --platform=node --format=esm --target=node22 --legal-comments=external --outfile=dist/server.mjs && esbuild scripts/live-smoke.mjs --bundle --platform=node --format=esm --target=node22 --legal-comments=external --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" --outfile=dist/live-smoke.mjs",
+    "test": "node --test",
+    "lint": "eslint src scripts tests",
+    "check:public": "node scripts/check-publication.mjs",
+    "check": "npm run build && npm run lint && npm run check:public && npm test",
+    "licenses": "node scripts/third-party-notices.mjs",
+    "status": "node scripts/retrieval-trial.mjs report"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "esbuild": "0.28.2",
+    "eslint": "10.11.0",
+    "zod": "4.6.5"
+  }
+}

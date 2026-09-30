@@ -1,0 +1,59 @@
+name: CI
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  offline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22.23.3
+          cache: npm
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - name: Install locked development dependencies
+        run: npm ci --ignore-scripts
+      - name: Install local discovery prerequisite
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ripgrep
+      - name: Build and lint
+        run: |
+          npm run build
+          npm run lint
+      - name: Offline retrieval and package lifecycle
+        run: npm test
+      - name: Offline recovery runtime
+        run: |
+          python3 -m unittest discover -s runtime -p 'test_*.py' -q
+          python3 -m compileall -q runtime
+      - name: Public tree and dependency audit
+        run: |
+          npm run check:public
+          npm audit --audit-level=high
+          git diff --check
+  secrets:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Scan history with checksum-pinned Gitleaks
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP"
+          curl --fail --silent --show-error --location --output gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          printf '%s  %s\n' 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb gitleaks.tar.gz | sha256sum --check
+          tar -xzf gitleaks.tar.gz gitleaks
+          ./gitleaks git "$GITHUB_WORKSPACE" --redact --no-banner --log-opts="--all"

@@ -1,0 +1,14 @@
+name: Feature request
+description: Propose a focused improvement to retrieval, safety or usability.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and desired outcome
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Alternatives, safety considerations and evidence
+      description: For performance claims include correctness, follow-up reads and missing measurements.

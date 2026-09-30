@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private security report
+    url: https://github.com/Hyper-AI-Lab/codex-jev/security/advisories/new
+    about: Report vulnerabilities without exposing secrets in public issues.
+  - name: Questions and measured results
+    url: https://github.com/Hyper-AI-Lab/codex-jev/discussions
+    about: Discuss setup or share sanitized, reproducible evidence.
