@@ -249,6 +249,8 @@ def uninstall_observer(home):
 
 
 def observer_status(home):
+    from telemetry import diagnostic_status
+
     home.ensure()
     manifest = read_json(home.path / "observer-installation.json")
     try:
@@ -266,4 +268,5 @@ def observer_status(home):
         ),
         "service_manager_state": "not_queried",
         "native_coverage": "not_inferred",
+        "compatibility": diagnostic_status(home),
     }

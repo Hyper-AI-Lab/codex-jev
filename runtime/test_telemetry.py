@@ -4,6 +4,7 @@ import io
 import json
 import threading
 import time
+from unittest.mock import patch
 
 from telemetry import make_server, quota_event, receive
 from test_support import RuntimeCase
@@ -60,6 +61,82 @@ class TelemetryTests(RuntimeCase):
         self.assertEqual(receive(self.home, payload)["measurements"], 0)
         self.assertFalse(report(self.home)["nativeTokensMeasured"])
 
+    def test_diagnostics_distinguish_transport_from_supported_token_coverage(self):
+        payload = self.usage_event()
+        result = receive(self.home, payload)
+        self.assertEqual(result["diagnostics"]["transport_seen"], 1)
+        self.assertEqual(result["diagnostics"]["completed_usage_candidates"], 1)
+        self.assertEqual(result["diagnostics"]["supported_token_events"], 1)
+        self.assertEqual(result["diagnostics"]["missing_input_tokens"], 0)
+        self.assertEqual(result["diagnostics"]["missing_output_tokens"], 0)
+        self.assertTrue(report(self.home)["nativeTokensMeasured"])
+
+    def test_unsupported_service_is_counted_without_retaining_attributes(self):
+        payload = self.usage_event()
+        resource = payload["resourceLogs"][0]
+        resource["resource"]["attributes"][0]["value"]["stringValue"] = "mystery-service"
+        payload["resourceLogs"][0]["scopeLogs"][0]["logRecords"][0]["attributes"].append(
+            {"key": "private.attribute.canary", "value": {"stringValue": "PRIVATE-VALUE-CANARY"}}
+        )
+        result = receive(self.home, payload)
+        self.assertEqual(result["measurements"], 0)
+        self.assertEqual(result["diagnostics"]["unsupported_service_resources"], 1)
+        self.assertEqual(result["diagnostics"]["recognized_services"], 0)
+        stored = (self.home.path / "telemetry-diagnostics.json").read_bytes()
+        self.assertNotIn(b"mystery-service", stored)
+        self.assertNotIn(b"private.attribute.canary", stored)
+        self.assertNotIn(b"PRIVATE-VALUE-CANARY", stored)
+
+    def test_completed_candidate_reports_each_missing_usage_category(self):
+        payload = self.usage_event()
+        record = payload["resourceLogs"][0]["scopeLogs"][0]["logRecords"][0]
+        record.pop("timeUnixNano")
+        record["attributes"] = [
+            row for row in record["attributes"]
+            if row["key"] not in {
+                "conversation.id", "turn_id", "input_tokens", "output_tokens",
+            }
+        ]
+        result = receive(self.home, payload)
+        diagnostics = result["diagnostics"]
+        self.assertEqual(diagnostics["completed_usage_candidates"], 1)
+        self.assertEqual(diagnostics["missing_session_ids"], 1)
+        self.assertEqual(diagnostics["missing_turn_ids"], 1)
+        self.assertEqual(diagnostics["missing_timestamps"], 1)
+        self.assertEqual(diagnostics["missing_input_tokens"], 1)
+        self.assertEqual(diagnostics["missing_output_tokens"], 1)
+        self.assertEqual(diagnostics["supported_token_events"], 0)
+        self.assertEqual(diagnostics["transport_seen"], 1)
+
+    def test_invalid_usage_shape_is_counted_and_persistence_is_bounded_numeric_only(self):
+        payload = self.usage_event()
+        record = payload["resourceLogs"][0]["scopeLogs"][0]["logRecords"][0]
+        for row in record["attributes"]:
+            if row["key"] == "input_tokens":
+                row["value"] = {"stringValue": "not-a-number"}
+            if row["key"] == "output_tokens":
+                row["value"] = {"stringValue": "PRIVATE-USAGE-CANARY"}
+        record["attributes"].append(
+            {"key": "untrusted.attribute.name", "value": {"stringValue": "untrusted value"}}
+        )
+        result = receive(self.home, payload)
+        self.assertEqual(result["measurements"], 0)
+        self.assertEqual(result["diagnostics"]["invalid_usage"], 1)
+        self.assertEqual(result["diagnostics"]["supported_token_events"], 0)
+        path = self.home.path / "telemetry-diagnostics.json"
+        stored = json.loads(path.read_text())
+        self.assertEqual(set(stored), {"version", "counters"})
+        self.assertEqual(stored["version"], 1)
+        self.assertTrue(all(type(value) is int and 0 <= value <= 1_000_000_000
+                            for value in stored["counters"].values()))
+        serialized = path.read_bytes()
+        for canary in (b"PRIVATE-USAGE-CANARY", b"untrusted.attribute.name", b"untrusted value"):
+            self.assertNotIn(canary, serialized)
+
+    def test_unsupported_nested_shapes_are_counted(self):
+        result = receive(self.home, {"resourceLogs": [None, {"scopeLogs": [None]}]})
+        self.assertEqual(result["diagnostics"]["unsupported_shapes"], 2)
+
     def test_installed_event_aliases_and_body_name(self):
         payload = self.usage_event()
         item = payload["resourceLogs"][0]["scopeLogs"][0]["logRecords"][0]
@@ -94,6 +171,14 @@ class TelemetryTests(RuntimeCase):
         record = payload["resourceLogs"][0]["scopeLogs"][0]["logRecords"][0]
         record["eventName"] = record["attributes"].pop(0)["value"]["stringValue"]
         self.assertTrue(quota_event(payload))
+
+    def test_diagnostic_write_failure_cannot_prevent_quota_halt(self):
+        with patch("telemetry.persist_diagnostics", side_effect=OSError("synthetic disk full")):
+            try:
+                receive(self.home, event())
+            except OSError:
+                pass
+        self.assertTrue(self.home.halted())
 
     def test_tool_429_and_prompt_mentions_never_trigger_halt(self):
         for name in (

@@ -1,6 +1,7 @@
 import json
 import sqlite3
 import time
+from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 
 from measurements import bind_session, record, report
@@ -29,6 +30,55 @@ class MeasurementTests(RuntimeCase):
         record(self.home, kind="hook", values={"duration_ms": 3}, origin="synthetic")
         self.assertEqual({r["origin"] for r in report(self.home)["groups"]}, {"unattributed", "synthetic"})
         self.assertFalse(report(self.home)["nativeTokensMeasured"])
+
+    def test_native_response_identity_survives_replayed_timestamp(self):
+        event = dict(kind="native_usage", values={"input_tokens": 100},
+                     session="session", turn="turn", event_id="response-one")
+        self.assertTrue(record(self.home, **event, observed_at=time.time() - 1))
+        self.assertFalse(record(self.home, **event, observed_at=time.time()))
+
+    def test_same_response_id_with_conflicting_usage_is_not_silently_accepted(self):
+        event = dict(kind="native_usage", session="session", event_id="response-one")
+        record(self.home, **event, values={"input_tokens": 100})
+        with self.assertRaises(ValueError):
+            record(self.home, **event, values={"input_tokens": 101})
+
+    def test_native_receipts_survive_detail_pruning(self):
+        with patch("measurements.MAX_RECORDS", 2):
+            for index in range(4):
+                record(self.home, kind="native_usage", session="one", values={"input_tokens": 10}, event_id=str(index))
+        self.assertFalse(record(self.home, kind="native_usage", session="one", values={"input_tokens": 10}, event_id="0"))
+        self.assertEqual(sum(r["value"] for r in report(self.home)["groups"] if r["metric"] == "input_tokens"), 40)
+
+    def test_incomplete_telemetry_does_not_claim_the_native_source(self):
+        self.assertFalse(record(self.home, kind="native_usage", session="one", values={"duration_ms": 10}))
+        self.assertTrue(record(self.home, kind="native_usage", session="one", source="history",
+                               values={"input_tokens": 100}, event_id="history"))
+
+    def test_concurrent_delivery_inserts_one_native_response(self):
+        def deliver(_index):
+            return record(self.home, kind="native_usage", session="one", values={"input_tokens": 100}, event_id="response")
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            self.assertEqual(sum(pool.map(deliver, range(6))), 1)
+        self.assertEqual(sum(r["value"] for r in report(self.home)["groups"] if r["metric"] == "input_tokens"), 100)
+
+    def test_sessionless_native_usage_is_diagnostic_not_additive_usage(self):
+        self.assertFalse(record(self.home, kind="native_usage", values={"input_tokens": 100}, event_id="no-session"))
+        self.assertTrue(record(self.home, kind="native_usage", session="one", source="history",
+                               values={"input_tokens": 100}, event_id="response"))
+        self.assertEqual(sum(r["value"] for r in report(self.home)["groups"] if r["metric"] == "input_tokens"), 100)
+
+    def test_legacy_native_usage_claims_otlp_before_history_election(self):
+        record(self.home, kind="native_usage", session="one", event_id="old", values={"input_tokens": 100})
+        with sqlite3.connect(self.home.path / "measurements.sqlite3") as db:
+            db.execute("DELETE FROM native_sources")
+            db.execute("DELETE FROM native_receipts")
+            db.execute("DROP TABLE IF EXISTS measurement_metadata")
+        self.assertFalse(record(self.home, kind="native_usage", session="one", source="history",
+                                event_id="new-history", values={"input_tokens": 100}))
+        self.assertTrue(record(self.home, kind="native_usage", session="one", event_id="new-otlp",
+                               values={"input_tokens": 25}))
+        self.assertEqual(sum(r["value"] for r in report(self.home)["groups"] if r["metric"] == "input_tokens"), 125)
 
     def test_bounded_detail_preserves_aggregates(self):
         with patch("measurements.MAX_RECORDS", 2):

@@ -10,7 +10,7 @@ import sys
 import time
 from pathlib import Path
 
-from common import Home, encoded, git_root, read_json
+from common import Home, atomic_write, encoded, git_root, now, read_json
 from installer import install, status, uninstall
 from recovery import Guard, halt, resume
 
@@ -87,6 +87,16 @@ def hook(home, payload):
         # Measurement failures must not weaken or become a new recovery gate.
         try:
             from measurements import record
+            from history_usage import observe_hook
+
+            observed = observe_hook(home, payload)
+            if observed["state"] not in {"not_a_collection_boundary", "history_not_provided"}:
+                with home.lock():
+                    atomic_write(home.path / "usage-history-status.json", encoded({
+                        "at": now(), "state": observed["state"],
+                        "recorded": observed.get("recorded"),
+                        "invalid_records": observed.get("invalid_records"),
+                    }))
 
             record(home, kind="hook", values={"duration_ms": (time.perf_counter() - started) * 1000},
                    session=payload.get("session_id"), turn=payload.get("turn_id"))
@@ -213,12 +223,17 @@ def parser():
         "observer-uninstall",
         "observer-status",
         "metrics-report",
+        "usage-register",
+        "usage-collect",
         "recovery-verify",
     ):
         cmd = sub.add_parser(name)
         cmd.add_argument("--codex-home")
         if name == "metrics-report":
             cmd.add_argument("--format", choices=("json", "markdown"), default="json")
+        if name in {"usage-register", "usage-collect"}:
+            cmd.add_argument("--history", type=Path, required=True)
+            cmd.add_argument("--task", required=True)
         if name == "install":
             cmd.add_argument("--node", required=True)
             cmd.add_argument("--workspace", required=True)
@@ -272,6 +287,11 @@ def main():
             value = Guard(home, args.workspace, args.task).status()
         elif args.action == "resume":
             value = resume(home, args.acknowledge)
+        elif args.action in {"usage-register", "usage-collect"}:
+            from history_usage import collect_history, installed_version, register_history
+
+            value = (register_history(home, args.history, args.task, client_version=installed_version())
+                     if args.action == "usage-register" else collect_history(home, args.history, args.task))
         elif args.action == "metrics-report":
             from measurements import report
 

@@ -11,6 +11,7 @@ from pathlib import Path
 from common import encoded, identifier, no_symlinks, read_bytes, sha
 
 MAX_RECORDS = 10000
+MAX_NATIVE_RECEIPTS = 100000
 RETENTION_DAYS = 30
 ORIGINS = {"ordinary", "synthetic", "comparison", "unattributed"}
 KINDS = {"native_usage", "native_tool", "hook", "checkpoint"}
@@ -21,7 +22,7 @@ FIELDS = {"input_tokens", "cached_input_tokens", "output_tokens", "reasoning_tok
 @lru_cache(maxsize=1)
 def revision():
     return sha(b"".join(read_bytes(Path(__file__).with_name(name))
-                        for name in ("measurements.py", "telemetry.py", "manage.py", "recovery.py")))
+                        for name in ("measurements.py", "telemetry.py", "history_usage.py", "manage.py", "recovery.py")))
 
 
 def identity(value):
@@ -52,7 +53,28 @@ def database(home):
             month TEXT NOT NULL, revision TEXT NOT NULL, kind TEXT NOT NULL,
             origin TEXT NOT NULL, metric TEXT NOT NULL, samples INTEGER NOT NULL,
             value REAL NOT NULL, PRIMARY KEY(month,revision,kind,origin,metric));
+          CREATE TABLE IF NOT EXISTS native_sources(
+            session_hash TEXT PRIMARY KEY, source TEXT NOT NULL, at REAL NOT NULL);
+          CREATE TABLE IF NOT EXISTS native_receipts(
+            id TEXT PRIMARY KEY, metrics_hash TEXT NOT NULL, at REAL NOT NULL);
+          CREATE TABLE IF NOT EXISTS measurement_metadata(
+            key TEXT PRIMARY KEY, value REAL NOT NULL);
         """)
+        with connection:
+            connection.execute("BEGIN IMMEDIATE")
+            if not connection.execute("SELECT 1 FROM measurement_metadata WHERE key='source_election_boundary'").fetchone():
+                legacy = connection.execute("""SELECT EXISTS(SELECT 1 FROM events e WHERE e.kind='native_usage'
+                    AND NOT EXISTS(SELECT 1 FROM native_receipts r WHERE r.id=e.id))""").fetchone()[0]
+                unknown_legacy = (not connection.execute("SELECT 1 FROM native_sources LIMIT 1").fetchone()
+                                  and connection.execute("SELECT 1 FROM totals WHERE kind='native_usage' LIMIT 1").fetchone())
+                # Preserve known legacy ownership; pruned/sessionless aggregates
+                # stay explicitly unverified and cannot be backfilled over.
+                connection.execute("""INSERT OR IGNORE INTO native_sources
+                    SELECT DISTINCT e.session_hash,'otlp',? FROM events e
+                    WHERE e.kind='native_usage' AND e.session_hash IS NOT NULL
+                    AND NOT EXISTS(SELECT 1 FROM native_receipts r WHERE r.id=e.id)""", (time.time(),))
+                connection.execute("INSERT INTO measurement_metadata VALUES('source_election_boundary',?)",
+                                   (time.time() if legacy or unknown_legacy else 0,))
         yield connection
     finally:
         connection.close()
@@ -73,7 +95,7 @@ def bind_session(home, session, workspace, origin="ordinary"):
 
 
 def record(home, *, kind, values, session=None, turn=None, event_id=None,
-           origin="unattributed", observed_at=None):
+           origin="unattributed", observed_at=None, source="otlp"):
     if kind not in KINDS or origin not in ORIGINS or not isinstance(values, dict):
         raise ValueError("Invalid measurement")
     clean = {key: value for key, value in values.items() if key in FIELDS
@@ -89,11 +111,46 @@ def record(home, *, kind, values, session=None, turn=None, event_id=None,
     timestamp = time.time() if observed_at is None else observed_at
     if type(timestamp) not in (int, float) or not math.isfinite(timestamp) or timestamp < 0 or timestamp > time.time() + 300:
         raise ValueError("Invalid measurement timestamp")
+    if source not in {"otlp", "history"}:
+        raise ValueError("Unknown native measurement source")
     session_hash, turn_hash = identity(session), identity(turn)
     row = {"kind": kind, "session": session_hash, "turn": turn_hash, "values": clean,
            "event": identity(event_id), "at": timestamp, "revision": revision()}
-    key = sha(encoded({k: row[k] for k in ("kind", "session", "turn", "event", "at")}))
+    stable_native = kind == "native_usage" and session_hash and identity(event_id)
+    key = sha(encoded({k: row[k] for k in
+                      (("kind", "session", "event") if stable_native else
+                       ("kind", "session", "turn", "event", "at"))}))
     with database(home) as db, db:
+        db.execute("BEGIN IMMEDIATE")
+        if kind == "native_usage":
+            cutoff = time.time() - RETENTION_DAYS * 86400
+            boundary = db.execute("SELECT value FROM measurement_metadata WHERE key='source_election_boundary'").fetchone()[0]
+            if timestamp < max(cutoff, boundary) or "input_tokens" not in clean or not session_hash:
+                return False
+            db.execute("DELETE FROM native_receipts WHERE at < ?", (cutoff,))
+            db.execute("DELETE FROM native_sources WHERE at < ?", (cutoff,))
+            # Elect one source for each registered task. Never add a transcript
+            # counter to OTLP totals for the same task, even without response IDs.
+            if session_hash:
+                prior_source = db.execute("SELECT source FROM native_sources WHERE session_hash=?", (session_hash,)).fetchone()
+                if prior_source and prior_source["source"] != source:
+                    return False
+                if not prior_source and db.execute("SELECT COUNT(*) FROM native_sources").fetchone()[0] >= MAX_RECORDS:
+                    raise ValueError("Native source capacity reached; usage coverage incomplete")
+                db.execute("INSERT INTO native_sources VALUES(?,?,?) ON CONFLICT(session_hash) DO UPDATE SET at=excluded.at",
+                           (session_hash, source, time.time()))
+            elif source == "history":
+                raise ValueError("History usage requires a verified session")
+            if stable_native:
+                metrics_hash = sha(encoded(clean))
+                receipt = db.execute("SELECT metrics_hash FROM native_receipts WHERE id=?", (key,)).fetchone()
+                if receipt:
+                    if receipt["metrics_hash"] != metrics_hash:
+                        raise ValueError("Conflicting native response usage")
+                    return False
+                if db.execute("SELECT COUNT(*) FROM native_receipts").fetchone()[0] >= MAX_NATIVE_RECEIPTS:
+                    raise ValueError("Native receipt capacity reached; usage coverage incomplete")
+                db.execute("INSERT INTO native_receipts VALUES(?,?,?)", (key, metrics_hash, timestamp))
         if session_hash:
             binding = db.execute("SELECT origin FROM bindings WHERE session_hash=?", (session_hash,)).fetchone()
             if binding:
@@ -125,8 +182,11 @@ def report(home):
         rows = [dict(row) for row in db.execute("SELECT * FROM totals ORDER BY month,revision,kind,origin,metric")]
         details = db.execute("SELECT COUNT(*) FROM events").fetchone()[0]
         native = any(row["kind"] == "native_usage" and row["metric"] == "input_tokens" for row in rows)
+        sources = [dict(row) for row in db.execute("SELECT session_hash,source,at FROM native_sources")] if db.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='native_sources'").fetchone() else []
         return {"state": "observed" if rows else "no_observations", "nativeTokensMeasured": native,
                 "accountSavingsMeasured": False, "retentionDays": RETENTION_DAYS,
                 "detailRecords": details, "maxDetailRecords": MAX_RECORDS, "groups": rows,
-                "attribution": "session binding only; no time-window inference",
+                "attribution": "session binding only; no time-window inference", "nativeSources": sources,
+                "sourcePolicy": "First validated source per task; alternate source excluded, not summed. Historical aggregates remain unverified.",
                 "note": "Cached input and reasoning are subsets, not additional tokens. Usage is not an invoice."}
