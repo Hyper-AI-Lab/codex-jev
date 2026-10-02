@@ -4,8 +4,9 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { EvidenceService } from './hardened-service.mjs';
 import { configuration, dailyRequestLimit, defaultHome, POLICY, selectionMode } from './hardened-policy.mjs';
-import { entrypointError } from './entrypoint-error.mjs';
 import { evaluationLaunch } from './evaluation-launch.mjs';
+import { measuredOperation } from './measured-operation.mjs';
+import { InvocationLedger } from './invocation-ledger.mjs';
 
 process.umask(0o077);
 const service = await new EvidenceService({ forceLocal: process.env.JEV_FORCE_LOCAL === '1',
@@ -27,14 +28,7 @@ const common = {
 function register(name, description, inputSchema, operation) {
   server.registerTool(name, { description, inputSchema,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: name.includes('evidence') },
-  }, async input => {
-    try {
-      const value = await operation(input);
-      return { content: [{ type: 'text', text: JSON.stringify(value) }], structuredContent: value };
-    } catch (error) {
-      return { isError: true, content: [{ type: 'text', text: JSON.stringify(await entrypointError(error, service.home)) }] };
-    }
-  });
+  }, input => measuredOperation(service, name, input, operation));
 }
 register('search_workspace_evidence', 'Bounded workspace search with local exclusions/redaction and optional budgeted Jev selection. Reports unscanned and omitted evidence.', {
   ...common, maxFiles: z.number().int().min(1).max(5000).optional(),
@@ -55,6 +49,13 @@ register('list_evidence', 'Paginate exact references, including omissions and cr
 }, input => service.list(input));
 register('evidence_status', 'Report selection enablement and conservative local accounting, never credentials.', {}, async () => {
   const config = await configuration(service.home);
+  let invocationCoverage = { state: 'disabled' };
+  if (config.measurement_enabled) {
+    let ledger;
+    try { ledger = new InvocationLedger(service.home); invocationCoverage = ledger.summary(); }
+    catch { invocationCoverage = { state: 'unavailable' }; }
+    finally { ledger?.close(); }
+  }
   return { enabled: config.enabled, liveValidated: config.live_validated, model: config.model,
     sourcePolicy: POLICY, loadedBuild: service.buildHash, measurementOrigin: service.measurementOrigin,
     selectionMode: service.forceLocal ? 'local_only' : selectionMode(config, service.boundRoot),
@@ -68,6 +69,7 @@ register('evidence_status', 'Report selection enablement and conservative local 
     validationBudgetUsd: config.validation_budget_usd, monthlyBudgetUsd: config.monthly_budget_usd, totalBudgetUsd: config.total_budget_usd,
     accounting: service.store.status(), reservations: service.store.reservations(), hookTrust: 'not_inspected_by_mcp',
     telemetryCoverage: service.store.runtimeMeasurements(),
+    invocationCoverage,
     ...(config.measurement_enabled ? { measurements: service.store.measurements(config.default_authorization?.id ?? config.trial?.id) } : {}),
     hookTrustNote: 'Check the native hook UI for trust and recovery status for observed callbacks; this tool does not read or modify trust.' };
 });

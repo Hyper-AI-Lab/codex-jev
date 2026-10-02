@@ -410,11 +410,11 @@ var require_codegen = __commonJS({
         const rhs = this.rhs === void 0 ? "" : ` = ${this.rhs}`;
         return `${varKind} ${this.name}${rhs};` + _n;
       }
-      optimizeNames(names, constants3) {
+      optimizeNames(names, constants4) {
         if (!names[this.name.str])
           return;
         if (this.rhs)
-          this.rhs = optimizeExpr(this.rhs, names, constants3);
+          this.rhs = optimizeExpr(this.rhs, names, constants4);
         return this;
       }
       get names() {
@@ -431,10 +431,10 @@ var require_codegen = __commonJS({
       render({ _n }) {
         return `${this.lhs} = ${this.rhs};` + _n;
       }
-      optimizeNames(names, constants3) {
+      optimizeNames(names, constants4) {
         if (this.lhs instanceof code_1.Name && !names[this.lhs.str] && !this.sideEffects)
           return;
-        this.rhs = optimizeExpr(this.rhs, names, constants3);
+        this.rhs = optimizeExpr(this.rhs, names, constants4);
         return this;
       }
       get names() {
@@ -495,8 +495,8 @@ var require_codegen = __commonJS({
       optimizeNodes() {
         return `${this.code}` ? this : void 0;
       }
-      optimizeNames(names, constants3) {
-        this.code = optimizeExpr(this.code, names, constants3);
+      optimizeNames(names, constants4) {
+        this.code = optimizeExpr(this.code, names, constants4);
         return this;
       }
       get names() {
@@ -525,12 +525,12 @@ var require_codegen = __commonJS({
         }
         return nodes.length > 0 ? this : void 0;
       }
-      optimizeNames(names, constants3) {
+      optimizeNames(names, constants4) {
         const { nodes } = this;
         let i = nodes.length;
         while (i--) {
           const n = nodes[i];
-          if (n.optimizeNames(names, constants3))
+          if (n.optimizeNames(names, constants4))
             continue;
           subtractNames(names, n.names);
           nodes.splice(i, 1);
@@ -583,12 +583,12 @@ var require_codegen = __commonJS({
           return void 0;
         return this;
       }
-      optimizeNames(names, constants3) {
+      optimizeNames(names, constants4) {
         var _a3;
-        this.else = (_a3 = this.else) === null || _a3 === void 0 ? void 0 : _a3.optimizeNames(names, constants3);
-        if (!(super.optimizeNames(names, constants3) || this.else))
+        this.else = (_a3 = this.else) === null || _a3 === void 0 ? void 0 : _a3.optimizeNames(names, constants4);
+        if (!(super.optimizeNames(names, constants4) || this.else))
           return;
-        this.condition = optimizeExpr(this.condition, names, constants3);
+        this.condition = optimizeExpr(this.condition, names, constants4);
         return this;
       }
       get names() {
@@ -611,10 +611,10 @@ var require_codegen = __commonJS({
       render(opts) {
         return `for(${this.iteration})` + super.render(opts);
       }
-      optimizeNames(names, constants3) {
-        if (!super.optimizeNames(names, constants3))
+      optimizeNames(names, constants4) {
+        if (!super.optimizeNames(names, constants4))
           return;
-        this.iteration = optimizeExpr(this.iteration, names, constants3);
+        this.iteration = optimizeExpr(this.iteration, names, constants4);
         return this;
       }
       get names() {
@@ -650,10 +650,10 @@ var require_codegen = __commonJS({
       render(opts) {
         return `for(${this.varKind} ${this.name} ${this.loop} ${this.iterable})` + super.render(opts);
       }
-      optimizeNames(names, constants3) {
-        if (!super.optimizeNames(names, constants3))
+      optimizeNames(names, constants4) {
+        if (!super.optimizeNames(names, constants4))
           return;
-        this.iterable = optimizeExpr(this.iterable, names, constants3);
+        this.iterable = optimizeExpr(this.iterable, names, constants4);
         return this;
       }
       get names() {
@@ -695,11 +695,11 @@ var require_codegen = __commonJS({
         (_b = this.finally) === null || _b === void 0 ? void 0 : _b.optimizeNodes();
         return this;
       }
-      optimizeNames(names, constants3) {
+      optimizeNames(names, constants4) {
         var _a3, _b;
-        super.optimizeNames(names, constants3);
-        (_a3 = this.catch) === null || _a3 === void 0 ? void 0 : _a3.optimizeNames(names, constants3);
-        (_b = this.finally) === null || _b === void 0 ? void 0 : _b.optimizeNames(names, constants3);
+        super.optimizeNames(names, constants4);
+        (_a3 = this.catch) === null || _a3 === void 0 ? void 0 : _a3.optimizeNames(names, constants4);
+        (_b = this.finally) === null || _b === void 0 ? void 0 : _b.optimizeNames(names, constants4);
         return this;
       }
       get names() {
@@ -1000,7 +1000,7 @@ var require_codegen = __commonJS({
     function addExprNames(names, from) {
       return from instanceof code_1._CodeOrName ? addNames(names, from.names) : names;
     }
-    function optimizeExpr(expr, names, constants3) {
+    function optimizeExpr(expr, names, constants4) {
       if (expr instanceof code_1.Name)
         return replaceName(expr);
       if (!canOptimize(expr))
@@ -1015,14 +1015,14 @@ var require_codegen = __commonJS({
         return items;
       }, []));
       function replaceName(n) {
-        const c = constants3[n.str];
+        const c = constants4[n.str];
         if (c === void 0 || names[n.str] !== 1)
           return n;
         delete names[n.str];
         return c;
       }
       function canOptimize(e) {
-        return e instanceof code_1._Code && e._items.some((c) => c instanceof code_1.Name && names[c.str] === 1 && constants3[c.str] !== void 0);
+        return e instanceof code_1._Code && e._items.some((c) => c instanceof code_1.Name && names[c.str] === 1 && constants4[c.str] !== void 0);
       }
     }
     function subtractNames(names, from) {
@@ -2984,7 +2984,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve6.call(this, root, ref);
+      let _sch = resolve7.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a3 = root.localRefs) === null || _a3 === void 0 ? void 0 : _a3[ref];
         const { schemaId } = this.opts;
@@ -3011,7 +3011,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve6(root, ref) {
+    function resolve7(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3841,7 +3841,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve6(baseURI, relativeURI, options) {
+    function resolve7(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const {
         parsed: baseParsed,
@@ -4210,7 +4210,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve6,
+      resolve: resolve7,
       resolveComponent,
       equal,
       serialize,
@@ -15857,7 +15857,7 @@ var recursive = /* @__PURE__ */ new WeakMap();
 var NONE = 0;
 var ASSUMED = 1;
 var PROVEN = 2;
-function isRecursive(inst, stack, resolve6) {
+function isRecursive(inst, stack, resolve7) {
   const cached2 = recursive.get(inst);
   if (cached2 !== void 0)
     return cached2 ? PROVEN : NONE;
@@ -15867,7 +15867,7 @@ function isRecursive(inst, stack, resolve6) {
   let result = NONE;
   const check2 = (child) => {
     if (result !== PROVEN && child?._zod) {
-      const answer = isRecursive(child, stack, resolve6);
+      const answer = isRecursive(child, stack, resolve7);
       if (answer > result)
         result = answer;
     }
@@ -15878,7 +15878,7 @@ function isRecursive(inst, stack, resolve6) {
       const desc = Object.getOwnPropertyDescriptor(sh, key);
       if (spread && !desc.enumerable)
         continue;
-      const child = desc.get ? ASSUMED : desc.value?._zod ? isRecursive(desc.value, stack, resolve6) : NONE;
+      const child = desc.get ? ASSUMED : desc.value?._zod ? isRecursive(desc.value, stack, resolve7) : NONE;
       if (child > answer)
         answer = child;
     }
@@ -15942,7 +15942,7 @@ function isRecursive(inst, stack, resolve6) {
       break;
     // `$ZodLazy` caches its inner on the def, so a resolved edge is followed exactly
     case "lazy": {
-      const inner = def._cachedInner ?? (resolve6 ? inst._zod.innerType : void 0);
+      const inner = def._cachedInner ?? (resolve7 ? inst._zod.innerType : void 0);
       merge3(inner ? isRecursive(inner, stack, false) : ASSUMED);
       break;
     }
@@ -34350,7 +34350,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve6) => setTimeout(resolve6, pollInterval));
+        await new Promise((resolve7) => setTimeout(resolve7, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error62) {
@@ -34367,7 +34367,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve6, reject) => {
+    return new Promise((resolve7, reject) => {
       const earlyReject = (error62) => {
         reject(error62);
       };
@@ -34445,7 +34445,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve6(parseResult.data);
+            resolve7(parseResult.data);
           }
         } catch (error62) {
           reject(error62);
@@ -34706,12 +34706,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve6, reject) => {
+    return new Promise((resolve7, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve6, interval);
+      const timeoutId = setTimeout(resolve7, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -35802,7 +35802,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve6) => setTimeout(resolve6, pollInterval));
+      await new Promise((resolve7) => setTimeout(resolve7, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -36466,12 +36466,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve6) => {
+    return new Promise((resolve7) => {
       const json2 = serializeMessage(message);
       if (this._stdout.write(json2)) {
-        resolve6();
+        resolve7();
       } else {
-        this._stdout.once("drain", resolve6);
+        this._stdout.once("drain", resolve7);
       }
     });
   }
@@ -37972,17 +37972,34 @@ var EvidenceService = class {
   }
 };
 
+// src/evaluation-launch.mjs
+import { basename as basename2, dirname as dirname3, join as join6, resolve as resolve4 } from "node:path";
+async function evaluationLaunch(home, root, manifestPath, digest) {
+  if (!manifestPath && !digest) return {};
+  const run = dirname3(resolve4(manifestPath ?? "."));
+  if (!/^[a-f0-9]{64}$/.test(digest ?? "") || dirname3(run) !== join6(resolve4(home), "evaluations") || resolve4(manifestPath) !== join6(run, "comparison-manifest.json") || dirname3(resolve4(root)) !== join6(run, "fixtures"))
+    throw new SafeError("fixture_denied", "Invalid comparison manifest location.");
+  const manifest = await readPrivateJson(manifestPath);
+  if (!manifest || hash2(JSON.stringify(manifest)) !== digest || manifest.kind !== "capped-hardening-comparison-v1" || manifest.maxNativeRuns !== 4 || manifest.inputBoundary !== 1e5 || !Number.isFinite(Date.parse(manifest.expires)) || Date.parse(manifest.expires) <= Date.now() || Date.parse(manifest.expires) > Date.now() + 2 * 36e5 || !["environment-precedence-contract", "inventory-pool-incident"].includes(basename2(root)))
+    throw new SafeError("fixture_denied", "Comparison authority is expired, changed or invalid.");
+  return {
+    evaluationScope: await fixtureScope(home, root, manifest.baseline?.[basename2(root)]),
+    purpose: "validation",
+    measurementOrigin: "comparison"
+  };
+}
+
 // src/entrypoint-error.mjs
-import { dirname as dirname3, resolve as resolve4 } from "node:path";
+import { dirname as dirname4, resolve as resolve5 } from "node:path";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 async function entrypointError(error62, home) {
   let checkpoint = "";
   if (["halted", "usage_invalid"].includes(error62.code)) {
-    const manager = resolve4(dirname3(fileURLToPath2(import.meta.url)), "../runtime/manage.py");
+    const manager = resolve5(dirname4(fileURLToPath2(import.meta.url)), "../runtime/manage.py");
     try {
       await exec(
         process.env.JEV_PYTHON || "python3",
-        [manager, "halt", "--provider", "typesafe", "--codex-home", dirname3(home)],
+        [manager, "halt", "--provider", "typesafe", "--codex-home", dirname4(home)],
         { timeout: 3e4, maxBuffer: 65536 }
       );
       checkpoint = " Recovery checkpoint requested.";
@@ -37996,21 +38013,298 @@ async function entrypointError(error62, home) {
   };
 }
 
-// src/evaluation-launch.mjs
-import { basename as basename2, dirname as dirname4, join as join6, resolve as resolve5 } from "node:path";
-async function evaluationLaunch(home, root, manifestPath, digest) {
-  if (!manifestPath && !digest) return {};
-  const run = dirname4(resolve5(manifestPath ?? "."));
-  if (!/^[a-f0-9]{64}$/.test(digest ?? "") || dirname4(run) !== join6(resolve5(home), "evaluations") || resolve5(manifestPath) !== join6(run, "comparison-manifest.json") || dirname4(resolve5(root)) !== join6(run, "fixtures"))
-    throw new SafeError("fixture_denied", "Invalid comparison manifest location.");
-  const manifest = await readPrivateJson(manifestPath);
-  if (!manifest || hash2(JSON.stringify(manifest)) !== digest || manifest.kind !== "capped-hardening-comparison-v1" || manifest.maxNativeRuns !== 4 || manifest.inputBoundary !== 1e5 || !Number.isFinite(Date.parse(manifest.expires)) || Date.parse(manifest.expires) <= Date.now() || Date.parse(manifest.expires) > Date.now() + 2 * 36e5 || !["environment-precedence-contract", "inventory-pool-incident"].includes(basename2(root)))
-    throw new SafeError("fixture_denied", "Comparison authority is expired, changed or invalid.");
-  return {
-    evaluationScope: await fixtureScope(home, root, manifest.baseline?.[basename2(root)]),
-    purpose: "validation",
-    measurementOrigin: "comparison"
+// src/invocation-ledger.mjs
+import { createHash as createHash2, randomUUID as randomUUID4 } from "node:crypto";
+import { chmodSync as chmodSync2, closeSync as closeSync2, constants as constants3, existsSync as existsSync2, fstatSync, lstatSync as lstatSync2, openSync as openSync2, readFileSync as readFileSync2 } from "node:fs";
+import { DatabaseSync as DatabaseSync2 } from "node:sqlite";
+import { dirname as dirname5, resolve as resolve6 } from "node:path";
+var OPERATIONS = /* @__PURE__ */ new Set([
+  "search_workspace_evidence",
+  "read_large_text_evidence",
+  "read_selected_evidence",
+  "list_evidence",
+  "evidence_status"
+]);
+var ORIGINS = /* @__PURE__ */ new Set(["ordinary", "synthetic", "comparison", "unattributed"]);
+var METRICS = /* @__PURE__ */ new Set([
+  "responseBytes",
+  "durationMs",
+  "jevRequests",
+  "jevInputTokens",
+  "jevOutputTokens",
+  "retrievalMs",
+  "selectionMs",
+  "evidenceBytes",
+  "followupBytes",
+  "followupReads",
+  "cacheHits",
+  "localBypasses"
+]);
+var MAX_ROWS = 1e4;
+var RETENTION_MS = 30 * 864e5;
+var DIGEST = /^[a-f0-9]{64}$/;
+var sha256 = (value) => createHash2("sha256").update(value, "utf8").digest("hex");
+function validUnicode(value) {
+  for (let i = 0; i < value.length; i++) {
+    const code = value.charCodeAt(i);
+    if (code >= 55296 && code <= 56319) {
+      const next = value.charCodeAt(i + 1);
+      if (!(next >= 56320 && next <= 57343)) return false;
+      i++;
+    } else if (code >= 56320 && code <= 57343) return false;
+  }
+  return true;
+}
+function canonicalValue(value, depth, seen) {
+  if (depth > 16) throw new TypeError("Canonical input exceeds maximum depth");
+  if (value === null || typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    if (!validUnicode(value) || Buffer.byteLength(value, "utf8") > 65536)
+      throw new TypeError("Canonical input contains invalid or oversized Unicode");
+    return value;
+  }
+  if (typeof value === "number") {
+    if (!Number.isSafeInteger(value)) throw new TypeError("Canonical input numbers must be safe integers");
+    return value;
+  }
+  if (typeof value !== "object") throw new TypeError("Canonical input must contain only JSON values");
+  if (seen.has(value)) throw new TypeError("Canonical input cannot contain cycles");
+  seen.add(value);
+  let result;
+  if (Array.isArray(value)) {
+    if (value.length > 4096) throw new TypeError("Canonical array exceeds entry limit");
+    const keys = Reflect.ownKeys(value);
+    if (keys.some((key) => typeof key !== "string" || key !== "length" && !/^(0|[1-9][0-9]*)$/.test(key)) || Object.keys(value).length !== value.length) throw new TypeError("Canonical arrays must be dense JSON arrays");
+    result = [];
+    for (let i = 0; i < value.length; i++) {
+      const descriptor = Object.getOwnPropertyDescriptor(value, String(i));
+      if (!descriptor || !descriptor.enumerable || !Object.hasOwn(descriptor, "value"))
+        throw new TypeError("Canonical arrays must contain data values");
+      result.push(canonicalValue(descriptor.value, depth + 1, seen));
+    }
+  } else {
+    const prototype = Object.getPrototypeOf(value);
+    if (prototype !== Object.prototype && prototype !== null) throw new TypeError("Canonical input objects must be plain");
+    if (Object.keys(value).length > 4096) throw new TypeError("Canonical object exceeds entry limit");
+    result = /* @__PURE__ */ Object.create(null);
+    const keys = Reflect.ownKeys(value);
+    if (keys.some((key) => typeof key !== "string")) throw new TypeError("Canonical objects cannot have symbol keys");
+    for (const key of keys.sort()) {
+      if (!/^[\x20-\x7e]{1,200}$/.test(key)) throw new TypeError("Canonical object keys must be printable ASCII");
+      const descriptor = Object.getOwnPropertyDescriptor(value, key);
+      if (!descriptor.enumerable || !Object.hasOwn(descriptor, "value"))
+        throw new TypeError("Canonical objects must contain enumerable data values");
+      result[key] = canonicalValue(descriptor.value, depth + 1, seen);
+    }
+  }
+  seen.delete(value);
+  return result;
+}
+function canonicalDigest(input2) {
+  const normalized = canonicalValue(input2, 0, /* @__PURE__ */ new Set());
+  const stringify = (value) => {
+    if (value === null || typeof value === "boolean" || typeof value === "string") return JSON.stringify(value);
+    if (typeof value === "number") return BigInt(value).toString();
+    if (Array.isArray(value)) return `[${value.map(stringify).join(",")}]`;
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stringify(value[key])}`).join(",")}}`;
   };
+  const canonical = stringify(normalized);
+  if (Buffer.byteLength(canonical, "utf8") > 65536) throw new TypeError("Canonical input exceeds 64 KiB");
+  return sha256(canonical);
+}
+function assertPrivatePath(home, path) {
+  const absoluteHome = resolve6(home);
+  for (let current = absoluteHome; ; current = dirname5(current)) {
+    const info = lstatSync2(current);
+    if (info.isSymbolicLink() || !info.isDirectory()) throw new Error("Unsafe private ledger ancestor");
+    if (current === dirname5(current)) break;
+  }
+  const homeInfo = lstatSync2(absoluteHome);
+  if (homeInfo.mode & 63) throw new Error("Private ledger directory permissions are too broad");
+  if (existsSync2(path)) {
+    const info = lstatSync2(path);
+    if (info.isSymbolicLink() || !info.isFile() || info.nlink !== 1) throw new Error("Unsafe private ledger file");
+  }
+}
+function normalizedMetrics(metrics) {
+  if (!metrics || typeof metrics !== "object" || Array.isArray(metrics) || Object.getPrototypeOf(metrics) !== Object.prototype && Object.getPrototypeOf(metrics) !== null) {
+    throw new TypeError("Metrics must be a plain object");
+  }
+  const result = {};
+  for (const key of Object.keys(metrics).sort()) {
+    const value = metrics[key];
+    if (!METRICS.has(key) || typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 1e15) {
+      throw new TypeError("Invalid numeric invocation metric");
+    }
+    result[key] = value;
+  }
+  return result;
+}
+var InvocationLedger = class {
+  constructor(home) {
+    this.home = resolve6(home);
+    this.path = resolve6(this.home, "invocations.sqlite3");
+    assertPrivatePath(this.home, this.path);
+    const flags = constants3.O_RDWR | constants3.O_CREAT | (constants3.O_NOFOLLOW ?? 0);
+    const fd = openSync2(this.path, flags, 384);
+    try {
+      const info = fstatSync(fd);
+      if (!info.isFile() || info.nlink !== 1 || typeof process.geteuid === "function" && info.uid !== process.geteuid())
+        throw new Error("Unsafe private ledger file");
+      chmodSync2(this.path, 384);
+    } finally {
+      closeSync2(fd);
+    }
+    this.db = new DatabaseSync2(this.path);
+    this.closed = false;
+    try {
+      this.db.exec("PRAGMA busy_timeout=5000; PRAGMA journal_mode=DELETE;");
+      this.db.exec(readFileSync2(new URL("../runtime/invocations.sql", import.meta.url), "utf8"));
+      const versions = this.db.prepare("SELECT version FROM invocation_schema").all().map((row) => row.version);
+      if (versions.length !== 1 || versions[0] !== 1) throw new Error("Unknown invocation schema");
+      this.db.exec("BEGIN IMMEDIATE");
+      try {
+        this.#prune(Date.now());
+        this.db.exec("COMMIT");
+      } catch (error62) {
+        this.db.exec("ROLLBACK");
+        throw error62;
+      }
+    } catch (error62) {
+      this.db.close();
+      this.closed = true;
+      throw error62;
+    }
+  }
+  #prune(now) {
+    const cutoff = now - RETENTION_MS;
+    this.db.prepare("DELETE FROM invocations WHERE started_at < ? AND result_status IN ('success','error')").run(cutoff);
+  }
+  #transaction(action) {
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const result = action();
+      this.db.exec("COMMIT");
+      return result;
+    } catch (error62) {
+      this.db.exec("ROLLBACK");
+      throw error62;
+    }
+  }
+  begin({ workspace, operation, input: input2, revision, origin = "ordinary" } = {}) {
+    if (typeof workspace !== "string" || !workspace || !validUnicode(workspace) || !OPERATIONS.has(operation) || typeof revision !== "string" || !DIGEST.test(revision) || !ORIGINS.has(origin)) {
+      throw new TypeError("Invalid invocation identity");
+    }
+    const argumentsHash = canonicalDigest(input2);
+    return this.#transaction(() => {
+      const now = Date.now();
+      this.#prune(now);
+      if (this.db.prepare("SELECT COUNT(*) AS count FROM invocations").get().count >= MAX_ROWS)
+        throw new Error("Invocation ledger capacity reached");
+      const id = randomUUID4();
+      this.db.prepare(`INSERT INTO invocations
+        (id,workspace_hash,operation,arguments_hash,revision,origin,started_at,completed_at,result_status,metrics)
+        VALUES(?,?,?,?,?,?,?,NULL,'started','{}')`).run(id, sha256(workspace), operation, argumentsHash, revision, origin, now);
+      return id;
+    });
+  }
+  finish(id, { status, metrics } = {}) {
+    if (typeof id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id) || !["success", "error"].includes(status)) throw new TypeError("Invalid invocation completion");
+    const metricValue = normalizedMetrics(metrics);
+    const serialized = JSON.stringify(metricValue);
+    return this.#transaction(() => {
+      const row = this.db.prepare("SELECT result_status,started_at,completed_at,metrics FROM invocations WHERE id=?").get(id);
+      if (!row) throw new Error("Invocation not found");
+      if (row.result_status !== "started") {
+        if (row.result_status === status && row.metrics === serialized) return false;
+        throw new Error("Invocation completion conflicts with immutable result");
+      }
+      const now = Date.now();
+      if (now < row.started_at) throw new Error("Invocation completion timestamp precedes start");
+      const changed = this.db.prepare("UPDATE invocations SET completed_at=?,result_status=?,metrics=? WHERE id=? AND result_status='started'").run(now, status, serialized, id);
+      if (changed.changes !== 1) throw new Error("Invocation completion conflict");
+      return true;
+    });
+  }
+  summary() {
+    const counts = this.db.prepare(`SELECT
+      (SELECT COUNT(*) FROM invocations) AS total,
+      (SELECT COUNT(*) FROM invocations WHERE session_hash IS NOT NULL AND turn_hash IS NOT NULL AND call_hash IS NOT NULL) AS verified,
+      (SELECT COUNT(*) FROM invocation_receipts WHERE invocation_id IS NULL) AS pending,
+      (SELECT COUNT(*) FROM invocations WHERE result_status='started') AS unfinished`).get();
+    return { ...counts, accountSavingsMeasured: false };
+  }
+  close() {
+    if (!this.closed) {
+      this.db.close();
+      this.closed = true;
+    }
+  }
+};
+
+// src/measured-operation.mjs
+var numeric = (value) => typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1e15;
+function operationMetrics(name, value, response, elapsed) {
+  const metrics = { responseBytes: Buffer.byteLength(JSON.stringify(response)), durationMs: Math.max(0, elapsed) };
+  for (const key of ["jevRequests", "retrievalMs", "selectionMs"]) {
+    if (numeric(value.metrics?.[key])) metrics[key] = value.metrics[key];
+  }
+  if (value.metrics?.jevRequests > 0) {
+    if (numeric(value.metrics?.jevUsage?.input_tokens)) metrics.jevInputTokens = value.metrics.jevUsage.input_tokens;
+    if (numeric(value.metrics?.jevUsage?.output_tokens)) metrics.jevOutputTokens = value.metrics.jevUsage.output_tokens;
+  }
+  if (numeric(value.metrics?.selectedEvidenceBytes)) metrics.evidenceBytes = value.metrics.selectedEvidenceBytes;
+  if (value.mode === "cache") metrics.cacheHits = 1;
+  if (value.mode === "bypass" || value.mode === "local") metrics.localBypasses = 1;
+  if (name === "read_selected_evidence" && typeof value.content === "string") {
+    metrics.followupBytes = Buffer.byteLength(value.content);
+    metrics.followupReads = 1;
+  }
+  return metrics;
+}
+async function measuredOperation(service2, name, input2, operation) {
+  const started = performance.now();
+  let ledger, id, unavailable = false;
+  try {
+    if ((await configuration(service2.home)).measurement_enabled) {
+      ledger = new InvocationLedger(service2.home);
+      id = ledger.begin({
+        workspace: service2.boundRoot,
+        operation: name,
+        input: input2,
+        revision: service2.buildHash,
+        origin: service2.measurementOrigin
+      });
+    }
+  } catch {
+    unavailable = true;
+  }
+  let value, isError = false;
+  try {
+    value = await operation(input2);
+  } catch (error62) {
+    value = await entrypointError(error62, service2.home);
+    isError = true;
+  }
+  if (id) value = { ...value, measurementId: id };
+  if (unavailable) value = { ...value, measurementWarning: "Invocation measurement is unavailable; task attribution is not verified." };
+  const envelope = () => ({
+    ...isError ? { isError: true } : {},
+    content: [{ type: "text", text: JSON.stringify(value) }],
+    structuredContent: value
+  });
+  try {
+    if (id) ledger.finish(id, {
+      status: isError ? "error" : "success",
+      metrics: operationMetrics(name, value, envelope(), performance.now() - started)
+    });
+  } catch {
+    delete value.measurementId;
+    value.measurementWarning = "Invocation recording did not complete; task attribution is not verified.";
+  } finally {
+    ledger?.close();
+  }
+  return envelope();
 }
 
 // src/mcp-server.mjs
@@ -38038,14 +38332,7 @@ function register(name, description, inputSchema, operation) {
     description,
     inputSchema,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: name.includes("evidence") }
-  }, async (input2) => {
-    try {
-      const value = await operation(input2);
-      return { content: [{ type: "text", text: JSON.stringify(value) }], structuredContent: value };
-    } catch (error62) {
-      return { isError: true, content: [{ type: "text", text: JSON.stringify(await entrypointError(error62, service.home)) }] };
-    }
-  });
+  }, (input2) => measuredOperation(service, name, input2, operation));
 }
 register("search_workspace_evidence", "Bounded workspace search with local exclusions/redaction and optional budgeted Jev selection. Reports unscanned and omitted evidence.", {
   ...common,
@@ -38073,6 +38360,18 @@ register("list_evidence", "Paginate exact references, including omissions and cr
 }, (input2) => service.list(input2));
 register("evidence_status", "Report selection enablement and conservative local accounting, never credentials.", {}, async () => {
   const config2 = await configuration(service.home);
+  let invocationCoverage = { state: "disabled" };
+  if (config2.measurement_enabled) {
+    let ledger;
+    try {
+      ledger = new InvocationLedger(service.home);
+      invocationCoverage = ledger.summary();
+    } catch {
+      invocationCoverage = { state: "unavailable" };
+    } finally {
+      ledger?.close();
+    }
+  }
   return {
     enabled: config2.enabled,
     liveValidated: config2.live_validated,
@@ -38098,6 +38397,7 @@ register("evidence_status", "Report selection enablement and conservative local 
     reservations: service.store.reservations(),
     hookTrust: "not_inspected_by_mcp",
     telemetryCoverage: service.store.runtimeMeasurements(),
+    invocationCoverage,
     ...config2.measurement_enabled ? { measurements: service.store.measurements(config2.default_authorization?.id ?? config2.trial?.id) } : {},
     hookTrustNote: "Check the native hook UI for trust and recovery status for observed callbacks; this tool does not read or modify trust."
   };

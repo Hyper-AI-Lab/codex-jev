@@ -68,3 +68,36 @@ test('built stdio server works in two isolated workspaces with private shared co
     await rm(temp, { recursive: true, force: true });
   }
 });
+
+test('native pre/post hook receipts verify real stdio results across Python and Node', async () => {
+  const temp = await realpath(await mkdtemp(join(tmpdir(), 'jev-attribution-')));
+  const codexHome = join(temp, 'codex'), home = join(codexHome, 'jev-context'), root = join(temp, 'workspace');
+  const client = new Client({ name: 'receipt-offline-test', version: '1.0.0' });
+  const native = { session_id: 'synthetic-native-task', turn_id: 'synthetic-native-turn', tool_use_id: 'synthetic-native-call' };
+  const runPython = (code, data) => exec(process.env.JEV_TEST_PYTHON || 'python3', ['-c', code, codexHome, root, JSON.stringify(data)], {
+    env: { ...process.env, PYTHONPATH: join(repoRoot, 'runtime') }, timeout: 20000,
+  });
+  try {
+    await mkdir(home, { recursive: true, mode: 0o700 });
+    await mkdir(root); await exec('git', ['init', '-q', root]);
+    await writeFile(join(root, 'evidence.txt'), 'call-specific diagnostic evidence\n');
+    await writeFile(join(home, 'config.json'), JSON.stringify({ ...defaults, measurement_enabled: true, allowed_roots: [root] }), { mode: 0o600 });
+    const input = { workspaceRoot: root, query: 'diagnostic', requirements: ['keep Unicode \u00e9 evidence'], resultLimit: 4 };
+    const payload = { ...native, tool_name: 'mcp__jev_context__search_workspace_evidence', tool_input: input };
+    const pre = await runPython('import sys,json;from common import Home;from invocations import pre_tool;h=Home(sys.argv[1]);p=json.loads(sys.argv[3]);h.register(sys.argv[2],p["session_id"]);print(json.dumps(pre_tool(h,p,sys.argv[2])))', payload);
+    assert.equal(JSON.parse(pre.stdout).state, 'receipt_created');
+    await client.connect(new StdioClientTransport({ command: process.execPath, args: [join(repoRoot, 'dist/server.mjs')], cwd: root,
+      env: { PATH: process.env.PATH, JEV_CONTEXT_HOME: home }, stderr: 'pipe' }));
+    const result = await client.callTool({ name: 'search_workspace_evidence', arguments: input });
+    assert.equal(result.isError, undefined);
+    assert.ok(result.structuredContent.measurementId);
+    const post = await runPython('import sys,json;from common import Home;from invocations import post_tool,usage_report;h=Home(sys.argv[1]);p=json.loads(sys.argv[3]);print(json.dumps({"link":post_tool(h,p,sys.argv[2]),"report":usage_report(h,p["session_id"])}))', { ...payload, tool_response: result });
+    const observed = JSON.parse(post.stdout);
+    assert.equal(observed.link.state, 'verified');
+    assert.equal(observed.report.verifiedOperations, 1);
+    assert.equal(observed.report.metrics.localBypasses, 1);
+    assert.equal(observed.report.accountSavingsMeasured, false);
+    const status = (await client.callTool({ name: 'evidence_status', arguments: {} })).structuredContent;
+    assert.equal(status.invocationCoverage.verified, 1);
+  } finally { await client.close(); await rm(temp, { recursive: true, force: true }); }
+});

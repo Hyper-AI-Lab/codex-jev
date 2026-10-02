@@ -3,6 +3,7 @@ import os
 import shlex
 import subprocess
 import sys
+from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from unittest.mock import patch
@@ -50,6 +51,28 @@ class ManageTests(RuntimeCase):
         payload["tool_name"] = "mcp__jev_context__evidence_status"
         self.denied(hook(self.home, payload))
 
+    def test_verified_hook_creates_receipt_but_halted_hook_does_not(self):
+        from invocations import database
+
+        hook(self.home, self.payload("SessionStart"))
+        payload = {**self.payload(), "tool_name": "mcp__jev_context__search_workspace_evidence",
+                   "turn_id": "turn", "tool_use_id": "call-one",
+                   "tool_input": {"workspaceRoot": str(self.root), "query": "evidence"}}
+        self.assertEqual(hook(self.home, payload), {})
+        with database(self.home) as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM invocation_receipts").fetchone()[0], 1)
+        halt(self.home, "codex", "test_limit")
+        payload["tool_use_id"] = "call-two"
+        self.denied(hook(self.home, payload))
+        with database(self.home) as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM invocation_receipts").fetchone()[0], 1)
+
+    def test_invocation_measurement_failure_does_not_weaken_recovery_or_deny_read(self):
+        hook(self.home, self.payload("SessionStart"))
+        payload = {**self.payload(), "tool_name": "mcp__jev_context__evidence_status"}
+        with patch("invocations.pre_tool", side_effect=OSError("synthetic ledger failure")):
+            self.assertEqual(hook(self.home, payload), {})
+
     def test_session_end_releases_registries_and_preserves_history(self):
         hook(self.home, self.payload("SessionStart"))
         guard = Guard(self.home, self.root, "session-one")
@@ -59,6 +82,24 @@ class ManageTests(RuntimeCase):
         self.assertEqual(self.read_state("active-tasks.json")["tasks"], {})
         self.assertEqual(self.home.registry()["sessions"], {})
         self.assertTrue((guard.runtime / "closed.json").is_file())
+
+    def test_session_end_collects_usage_before_revoking_history_registration(self):
+        history = self.home.codex / "sessions" / "rollout-offline.jsonl"
+        history.parent.mkdir()
+        history.write_text(json.dumps({"type": "session_meta", "payload": {
+            "id": "session-one", "cwd": str(self.root), "cli_version": "0.157.1"}}) + "\n")
+        start = {**self.payload("SessionStart"), "transcript_path": str(history)}
+        with patch("history_usage.installed_version", return_value="0.157.1"):
+            hook(self.home, start)
+        with history.open("a") as stream:
+            stream.write(json.dumps({"type": "token_usage_record", "timestamp": datetime.now(timezone.utc).isoformat(),
+                "payload": {"thread_id": "session-one", "turn_id": "turn", "response_id": "last-response", "usage": {
+                    "input_tokens": 100, "cached_input_tokens": 80, "output_tokens": 10, "reasoning_output_tokens": 2}}}) + "\n")
+        hook(self.home, {**start, "hook_event_name": "SessionEnd"})
+        from measurements import report
+
+        self.assertTrue(report(self.home)["nativeTokensMeasured"])
+        self.assertEqual(self.home.registry()["sessions"], {})
 
     def payload(self, event="PreToolUse"):
         return {

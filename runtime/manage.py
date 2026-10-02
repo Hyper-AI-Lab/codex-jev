@@ -56,6 +56,19 @@ def deny(reason="Jev recovery failed; inspect local status before further change
     }
 
 
+def collect_hook_usage(home, payload):
+    from history_usage import observe_hook
+
+    observed = observe_hook(home, payload)
+    if observed["state"] not in {"not_a_collection_boundary", "history_not_provided"}:
+        with home.lock():
+            atomic_write(home.path / "usage-history-status.json", encoded({
+                "at": now(), "state": observed["state"],
+                "recorded": observed.get("recorded"),
+                "invalid_records": observed.get("invalid_records"),
+            }))
+
+
 def hook(home, payload):
     if not isinstance(payload, dict):
         raise ValueError("Expected hook object")
@@ -87,16 +100,9 @@ def hook(home, payload):
         # Measurement failures must not weaken or become a new recovery gate.
         try:
             from measurements import record
-            from history_usage import observe_hook
 
-            observed = observe_hook(home, payload)
-            if observed["state"] not in {"not_a_collection_boundary", "history_not_provided"}:
-                with home.lock():
-                    atomic_write(home.path / "usage-history-status.json", encoded({
-                        "at": now(), "state": observed["state"],
-                        "recorded": observed.get("recorded"),
-                        "invalid_records": observed.get("invalid_records"),
-                    }))
+            if payload.get("hook_event_name") != "SessionEnd":
+                collect_hook_usage(home, payload)
 
             record(home, kind="hook", values={"duration_ms": (time.perf_counter() - started) * 1000},
                    session=payload.get("session_id"), turn=payload.get("turn_id"))
@@ -175,6 +181,10 @@ def run_hook(home, payload):
             guard.status()
     elif event == "SessionEnd":
         guard.checkpoint("session_end")
+        try:
+            collect_hook_usage(home, payload)
+        except Exception:
+            pass
         guard.close_session()
     elif event in {"PreToolUse", "PostToolUse"} and payload.get("tool_name") in READ_ONLY_EVIDENCE_TOOLS and previous:
         with guard.locked():
@@ -191,6 +201,16 @@ def run_hook(home, payload):
     }:
         guard.checkpoint(event)
     home.log_callback(event, session, "verified")
+    if event in {"PreToolUse", "PostToolUse"} and payload.get("tool_name") in READ_ONLY_EVIDENCE_TOOLS:
+        try:
+            from invocations import post_tool, pre_tool
+
+            attribution = (pre_tool if event == "PreToolUse" else post_tool)(home, payload, root)
+            home.log_callback("InvocationAttribution", session, attribution["state"])
+        except Exception:
+            # Attribution is measurement, not permission. Existing recovery and
+            # quota gates above remain authoritative if the numeric ledger fails.
+            home.log_callback("InvocationAttribution", session, "unavailable")
     if event == "SessionStart":
         return {
             "hookSpecificOutput": {
@@ -225,12 +245,15 @@ def parser():
         "metrics-report",
         "usage-register",
         "usage-collect",
+        "invocations-report",
         "recovery-verify",
     ):
         cmd = sub.add_parser(name)
         cmd.add_argument("--codex-home")
         if name == "metrics-report":
             cmd.add_argument("--format", choices=("json", "markdown"), default="json")
+        if name == "invocations-report":
+            cmd.add_argument("--task", required=True)
         if name in {"usage-register", "usage-collect"}:
             cmd.add_argument("--history", type=Path, required=True)
             cmd.add_argument("--task", required=True)
@@ -292,6 +315,10 @@ def main():
 
             value = (register_history(home, args.history, args.task, client_version=installed_version())
                      if args.action == "usage-register" else collect_history(home, args.history, args.task))
+        elif args.action == "invocations-report":
+            from invocations import usage_report
+
+            value = usage_report(home, args.task)
         elif args.action == "metrics-report":
             from measurements import report
 

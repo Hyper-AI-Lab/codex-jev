@@ -12,7 +12,7 @@
   "bin": { "codex-jev": "./scripts/investigate.mjs" },
   "files": [
     "dist/*.mjs", "dist/*.LEGAL.txt", "src/*.mjs", "scripts/*.mjs",
-    "runtime/*.py", "benchmarks/*.mjs", "benchmarks/README.md", "benchmarks/fixtures", "benchmarks/evaluation-v2.manifest.json", "tests/*.mjs", "docs/*.md", "docs/assets/*.svg",
+    "runtime/*.py", "runtime/*.sql", "benchmarks/*.mjs", "benchmarks/README.md", "benchmarks/fixtures", "benchmarks/evaluation-v2.manifest.json", "tests/*.mjs", "docs/*.md", "docs/assets/*.svg",
     "README.md", "LICENSE", "NOTICE.md", "THIRD_PARTY_NOTICES.txt", "SECURITY.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "CHANGELOG.md", "eslint.config.mjs", ".mcp.json"
   ],
   "scripts": {
