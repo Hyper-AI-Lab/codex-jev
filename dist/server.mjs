@@ -37442,6 +37442,7 @@ function candidatesFrom(source, query, requirements2) {
     const raw = lines.slice(start2, end).join("\n"), lower = raw.toLowerCase();
     const score = terms.reduce((n, term) => n + Number(lower.includes(term)) + 2 * Number(source.path.toLowerCase().includes(term)), 0);
     index = end;
+    if (!raw.trim()) continue;
     if (!score && !diagnostic && !reasons.length) continue;
     result.push({
       path: source.path,
@@ -37468,6 +37469,23 @@ function preview(item) {
     detailLevel: "preview",
     omittedText: true
   };
+}
+function diverseShortlist(items, limit) {
+  const chosen = /* @__PURE__ */ new Set();
+  const choose = (item) => {
+    if (chosen.size < limit) chosen.add(item);
+  };
+  for (const item of items) if (item.critical) choose(item);
+  for (const field of ["kind", "path"]) {
+    const seen = new Set([...chosen].map((item) => item[field]));
+    for (const item of items) {
+      if (seen.has(item[field])) continue;
+      seen.add(item[field]);
+      choose(item);
+    }
+  }
+  for (const item of items) choose(item);
+  return [...items.filter((item) => chosen.has(item)), ...items.filter((item) => !chosen.has(item))];
 }
 
 // src/hardened-service.mjs
@@ -37775,6 +37793,7 @@ var EvidenceService = class {
     }
     if (visited < paths.length) truncated = true;
     all.sort((a, b) => b.localScore - a.localScore || a.path.localeCompare(b.path) || a.lines.start - b.lines.start);
+    all.splice(0, all.length, ...diverseShortlist(all, candidateLimit));
     const candidates = all.slice(0, candidateLimit);
     let metadataSaved = true;
     if (discovery) {
@@ -37815,7 +37834,7 @@ var EvidenceService = class {
     const clean = (text) => config2.redaction_literals.reduce((value, literal2) => value.split(literal2).join("[REDACTED]"), redact(text, root));
     const order = selection.order ?? candidates.map((_, index) => index);
     const returned = order.filter((index) => kept.has(index)).map((index) => ({ ...records[index], excerpt: clean(candidates[index].excerpt) }));
-    const selected = page(input2.detailLevel === "preview" ? returned.map(preview) : returned, 0, limit);
+    const selected = page(input2.detailLevel === "full" ? returned : returned.map(preview), 0, limit);
     const warnings = [];
     if (selected.items.some((item) => item.omittedText)) warnings.push("Progressive disclosure: source text is omitted from previews/references; follow exact source ranges before drawing conclusions.");
     if (!metadataSaved) warnings.push("Metadata index size bound reached; discovery still used current source reads.");
@@ -38324,7 +38343,7 @@ var common = {
   requirements,
   resultLimit: external_exports.number().int().min(1).max(8).optional(),
   candidateLimit: external_exports.number().int().min(1).max(20).optional(),
-  detailLevel: external_exports.enum(["full", "preview"]).optional().describe("Preview shortens noncritical blocks; exact original ranges remain available. Defaults to full for compatibility."),
+  detailLevel: external_exports.enum(["full", "preview"]).optional().describe("Defaults to concise previews for noncritical blocks. Exact original ranges remain available; full explicitly preserves complete blocks."),
   recoveryOf: external_exports.string().uuid().optional().describe("Original session for the single targeted recovery pass.")
 };
 function register(name, description, inputSchema, operation) {

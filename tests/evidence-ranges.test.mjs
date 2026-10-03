@@ -56,6 +56,45 @@ test('preview is optional, preserves exact source ranges and does not replace cr
   assert.equal(precise.content, item.excerpt);
 });
 
+test('broad retrieval defaults to previews while explicit full detail preserves source', async t => {
+  const f = await fixture(t);
+  await writeFile(join(f.root, 'logic.js'), Array.from({ length: 12 }, (_, i) => `const handler_${i} = ${i};`).join('\n'));
+  const input = { workspaceRoot: f.root, query: 'handler' };
+  const short = await f.service.search(input);
+  const full = await f.service.search({ ...input, detailLevel: 'full' });
+  assert.equal(short.evidence[0].detailLevel, 'preview');
+  assert.ok(Buffer.byteLength(JSON.stringify(short.evidence)) < Buffer.byteLength(JSON.stringify(full.evidence)));
+  assert.match(full.evidence[0].excerpt, /handler_11/);
+  const recovered = await f.service.read({ sessionId: short.sessionId, evidenceId: short.evidence[0].evidenceId,
+    startLine: short.evidence[0].sourceLines.start, endLine: short.evidence[0].sourceLines.end });
+  assert.equal(recovered.content, full.evidence[0].excerpt);
+});
+
+test('crowded implementation ranges do not exclude different evidence sources from the shortlist', async t => {
+  const f = await fixture(t);
+  await writeFile(join(f.root, 'handler.js'), 'handler dispatch cache\n'.repeat(360));
+  await writeFile(join(f.root, 'checks.test.js'), 'dispatch verification\n');
+  await writeFile(join(f.root, 'settings.toml'), 'dispatch = true\n');
+  await writeFile(join(f.root, 'notes.md'), 'dispatch behavior is unverified; never assume success\n');
+  let shortlist;
+  f.service.select = async (_root, _query, _requirements, candidates) => {
+    shortlist = candidates;
+    return { mode: 'bypass', keep: candidates.map((_, i) => i), jevRequests: 0 };
+  };
+  const result = await f.service.search({ workspaceRoot: f.root, query: 'handler dispatch cache' });
+  assert.equal(shortlist.length, 20);
+  assert.deepEqual(new Set(shortlist.map(item => item.kind)), new Set(['code', 'test', 'configuration', 'documentation']));
+  assert.ok(shortlist.find(item => item.path === 'notes.md').critical);
+  let offset = 0, records = [];
+  do {
+    const page = await f.service.list({ sessionId: result.sessionId, offset });
+    records = records.concat(page.evidence); offset = page.nextOffset;
+  } while (offset !== null);
+  assert.equal(records.length, 33);
+  assert.ok(records.some(item => item.disposition === 'unscored'));
+  assert.equal(new Set(records.map(item => item.evidenceId)).size, records.length);
+});
+
 test('oversized first evidence returns a usable reference and bounded single-line reads make progress', async t => {
   const f = await fixture(t), text = 'checkout ' + 'x'.repeat(40000);
   await writeFile(join(f.root, 'output.log'), text);

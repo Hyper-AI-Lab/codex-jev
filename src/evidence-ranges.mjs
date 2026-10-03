@@ -43,6 +43,7 @@ export function candidatesFrom(source, query, requirements) {
     const raw = lines.slice(start, end).join('\n'), lower = raw.toLowerCase();
     const score = terms.reduce((n, term) => n + Number(lower.includes(term)) + 2 * Number(source.path.toLowerCase().includes(term)), 0);
     index = end;
+    if (!raw.trim()) continue;
     // Unrelated diagnostics remain addressable but do not get protected priority.
     if (!score && !diagnostic && !reasons.length) continue;
     result.push({ path: source.path, lines: { start: start + 1, end }, hash: source.hash,
@@ -59,4 +60,21 @@ export function preview(item) {
   if (rows.length <= 4 || item.critical) return { ...item, detailLevel: 'full' };
   return { ...item, sourceLines: item.lines, lines: { start: item.lines.start, end: item.lines.start + 3 },
     excerpt: rows.slice(0, 4).join('\n'), detailLevel: 'preview', omittedText: true };
+}
+
+export function diverseShortlist(items, limit) {
+  const chosen = new Set();
+  const choose = item => { if (chosen.size < limit) chosen.add(item); };
+  // Protection has priority; within remaining capacity keep different source
+  // kinds and files represented before taking more ranges from one source.
+  for (const item of items) if (item.critical) choose(item);
+  for (const field of ['kind', 'path']) {
+    const seen = new Set([...chosen].map(item => item[field]));
+    for (const item of items) {
+      if (seen.has(item[field])) continue;
+      seen.add(item[field]); choose(item);
+    }
+  }
+  for (const item of items) choose(item);
+  return [...items.filter(item => chosen.has(item)), ...items.filter(item => !chosen.has(item))];
 }

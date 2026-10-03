@@ -7,7 +7,7 @@ import { buildJevRankingRequest, rankWithJev } from './investigator.mjs';
 import { Store } from './hardened-store.mjs';
 import { authorizeFixture, verifyFixtureSource } from './evaluation-scope.mjs';
 import { discover, excludedPath, pathFilters } from './discovery.mjs';
-import { candidatesFrom, preview } from './evidence-ranges.mjs';
+import { candidatesFrom, diverseShortlist, preview } from './evidence-ranges.mjs';
 import { privateRead } from './private-read.mjs';
 import { MODEL, POLICY, SafeError, authorizedRoot, configuration, defaultHome, hash,
   privateDirectory, privacyIdentity, redact, redactSource, safeRead, safeReadBatch, selectionMode } from './hardened-policy.mjs';
@@ -261,6 +261,7 @@ export class EvidenceService {
     }
     if (visited < paths.length) truncated = true;
     all.sort((a, b) => b.localScore - a.localScore || a.path.localeCompare(b.path) || a.lines.start - b.lines.start);
+    all.splice(0, all.length, ...diverseShortlist(all, candidateLimit));
     const candidates = all.slice(0, candidateLimit);
     let metadataSaved = true;
     if (discovery) {
@@ -294,7 +295,7 @@ export class EvidenceService {
     const clean = text => config.redaction_literals.reduce((value, literal) => value.split(literal).join('[REDACTED]'), redact(text, root));
     const order = selection.order ?? candidates.map((_, index) => index);
     const returned = order.filter(index => kept.has(index)).map(index => ({ ...records[index], excerpt: clean(candidates[index].excerpt) }));
-    const selected = page(input.detailLevel === 'preview' ? returned.map(preview) : returned, 0, limit);
+    const selected = page(input.detailLevel === 'full' ? returned : returned.map(preview), 0, limit);
     const warnings = [];
     if (selected.items.some(item => item.omittedText)) warnings.push('Progressive disclosure: source text is omitted from previews/references; follow exact source ranges before drawing conclusions.');
     if (!metadataSaved) warnings.push('Metadata index size bound reached; discovery still used current source reads.');

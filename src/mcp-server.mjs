@@ -22,7 +22,7 @@ const common = {
   query: z.string().min(1).max(2000), requirements,
   resultLimit: z.number().int().min(1).max(8).optional(),
   candidateLimit: z.number().int().min(1).max(20).optional(),
-  detailLevel: z.enum(['full', 'preview']).optional().describe('Preview shortens noncritical blocks; exact original ranges remain available. Defaults to full for compatibility.'),
+  detailLevel: z.enum(['full', 'preview']).optional().describe('Defaults to concise previews for noncritical blocks. Exact original ranges remain available; full explicitly preserves complete blocks.'),
   recoveryOf: z.string().uuid().optional().describe('Original session for the single targeted recovery pass.'),
 };
 function register(name, description, inputSchema, operation) {

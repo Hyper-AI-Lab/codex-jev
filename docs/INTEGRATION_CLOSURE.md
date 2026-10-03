@@ -64,8 +64,8 @@ checked separately. No finding is promoted to a defect without source verificati
 | 4. Verified operation attribution | Implementation verified | 219 Node / 114 Python tests; real stdio MCP fixture links exact native receipts; rollout pending |
 | 5. Operational retrieval default | Implementation verified | 126 Python tests including 9 classifier and 19 hook tests; precise/native exceptions preserved; rollout pending |
 | 6. Workspace and follow-up usability | Implementation verified | 11 CLI/entrypoint/package tests; actual separate CLI processes; declared identity distinguished from native receipts |
-| 7. Evidence selection | Next | Default previews, explicit full detail, recoverable omitted ranges |
-| 8. Overhead and recovery | Pending | No deployed changes |
+| 7. Evidence selection | Implementation verified | 227 Node tests; default-preview/source-diversity regressions and frozen offline retention fixtures; rollout pending |
+| 8. Overhead and recovery | Next | Task reports, worker quota boundaries and explicit recovery commands |
 | 9. Immutable rollout | Pending | Installed private bundle retained |
 | 10. Ordinary-work observation and closure | Pending | No savings claim |
 
