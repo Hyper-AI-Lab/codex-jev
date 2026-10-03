@@ -24,10 +24,24 @@ python3 runtime/manage.py resume \
   --codex-home "${CODEX_HOME:-$HOME/.codex}" --acknowledge
 ```
 
-The hook deliberately permits only its exact read-only status command during a
-halt. An assistant-issued resume may be blocked; that is not permission to
-bypass trust or delete `halt.json`. JSON output with no remaining halt indicates
-successful recovery, not automatic replay of work.
+The updated hook permits its exact absolute status command and exact resume
+command with `--acknowledge` during a halt. Owner acknowledgment is still required;
+the exception only lets the verified recovery procedure run, it does not clear the
+halt itself. Other commands and compound shell syntax remain blocked. Older
+installed hooks may still require an owner terminal. Never bypass trust or delete
+`halt.json`. JSON output with no remaining halt indicates successful recovery, not
+automatic replay of work.
+
+Covered native `wait_agent` results also halt work when an identified worker has
+a structured quota error or the observed native usage-limit error envelope.
+Completed worker text, documents and arbitrary command output do not trigger this
+detector. Unsolicited worker notifications without that supported hook envelope
+remain uncovered: the coordinator must stop and record the halt explicitly.
+
+Known bounded native reads and protected evidence reads verify the previous
+checkpoint without recapturing unchanged files. Unknown commands retain full
+capture. This avoids repeated Git work, not corruption checks or before/after
+mutation boundaries.
 
 ## Uncertain Jev charges
 

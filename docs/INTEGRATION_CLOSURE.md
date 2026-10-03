@@ -65,8 +65,8 @@ checked separately. No finding is promoted to a defect without source verificati
 | 5. Operational retrieval default | Implementation verified | 126 Python tests including 9 classifier and 19 hook tests; precise/native exceptions preserved; rollout pending |
 | 6. Workspace and follow-up usability | Implementation verified | 11 CLI/entrypoint/package tests; actual separate CLI processes; declared identity distinguished from native receipts |
 | 7. Evidence selection | Implementation verified | 227 Node tests; default-preview/source-diversity regressions and frozen offline retention fixtures; rollout pending |
-| 8. Overhead and recovery | Next | Task reports, worker quota boundaries and explicit recovery commands |
-| 9. Immutable rollout | Pending | Installed private bundle retained |
+| 8. Overhead and recovery | Implementation verified | 133 Python / 229 Node tests; exact acknowledged resume, covered worker quota halt, numeric task reports; offline read-hook median 864 to 201 ms, not whole-session savings |
+| 9. Immutable rollout | Next | Installed private bundle retained; prepare content-addressed release and ownership-preserving upgrade |
 | 10. Ordinary-work observation and closure | Pending | No savings claim |
 
 ## Research and Limits

@@ -16,6 +16,7 @@ export function operationMetrics(name, value, response, elapsed) {
   if (numeric(value.metrics?.selectedEvidenceBytes)) metrics.evidenceBytes = value.metrics.selectedEvidenceBytes;
   if (value.mode === 'cache') metrics.cacheHits = 1;
   if (value.mode === 'bypass' || value.mode === 'local') metrics.localBypasses = 1;
+  if (value.mode === 'local-fallback') metrics.localFallbacks = 1;
   if (name === 'read_selected_evidence' && typeof value.content === 'string') {
     metrics.followupBytes = Buffer.byteLength(value.content); metrics.followupReads = 1;
   }

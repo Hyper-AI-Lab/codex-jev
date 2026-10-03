@@ -14,15 +14,17 @@ MAX_RECORDS = 10000
 MAX_NATIVE_RECEIPTS = 100000
 RETENTION_DAYS = 30
 ORIGINS = {"ordinary", "synthetic", "comparison", "unattributed"}
-KINDS = {"native_usage", "native_tool", "hook", "checkpoint"}
+KINDS = {"native_usage", "native_tool", "hook", "checkpoint", "retrieval_routing"}
 FIELDS = {"input_tokens", "cached_input_tokens", "output_tokens", "reasoning_tokens",
-          "duration_ms", "tool_calls", "success", "collector_errors"}
+          "duration_ms", "tool_calls", "success", "collector_errors",
+          "routing_redirect", "routing_native", "routing_native_exception", "routing_unclassified"}
 
 
 @lru_cache(maxsize=1)
 def revision():
     return sha(b"".join(read_bytes(Path(__file__).with_name(name))
-                        for name in ("measurements.py", "telemetry.py", "history_usage.py", "manage.py", "recovery.py")))
+                        for name in ("measurements.py", "telemetry.py", "history_usage.py", "manage.py", "recovery.py",
+                                     "worker_quota.py", "retrieval.py", "invocations.py", "invocations.sql")))
 
 
 def identity(value):

@@ -11,6 +11,7 @@ import re
 import shutil
 import stat
 import tempfile
+import time
 from contextlib import ExitStack
 from pathlib import Path
 
@@ -397,6 +398,21 @@ class Guard:
         return manifest, files
 
     def checkpoint(self, reason="manual", state=None):
+        started, success = time.perf_counter(), False
+        try:
+            result = self._checkpoint(reason, state)
+            success = True
+            return result
+        finally:
+            try:
+                from measurements import record
+
+                record(self.home, kind="checkpoint", values={"duration_ms": (time.perf_counter() - started) * 1000,
+                       "success": int(success)}, session=self.task)
+            except Exception:
+                pass
+
+    def _checkpoint(self, reason="manual", state=None):
         if not identifier(reason) or sensitive(reason.encode()):
             raise ValueError("Invalid checkpoint reason")
         if state is not None and (

@@ -37239,6 +37239,10 @@ var Store = class {
       "jevOutputTokens"
     ];
     const value = Object.fromEntries(names.filter((key) => Number.isFinite(metrics[key]) && metrics[key] >= 0).map((key) => [key, metrics[key]]));
+    if (!(value.jevRequests > 0)) {
+      delete value.jevInputTokens;
+      delete value.jevOutputTokens;
+    }
     this.db.exec("BEGIN IMMEDIATE");
     try {
       this.db.prepare("INSERT INTO retrieval_metrics(at,trial_id,workspace_hash,session_id,mode,value,revision,origin) VALUES(?,?,?,?,?,?,?,?)").run(Date.now(), trialId, workspaceHash, sessionId, mode, JSON.stringify(value), revision, origin);
@@ -38057,7 +38061,8 @@ var METRICS = /* @__PURE__ */ new Set([
   "followupBytes",
   "followupReads",
   "cacheHits",
-  "localBypasses"
+  "localBypasses",
+  "localFallbacks"
 ]);
 var MAX_ROWS = 1e4;
 var RETENTION_MS = 30 * 864e5;
@@ -38275,6 +38280,7 @@ function operationMetrics(name, value, response, elapsed) {
   if (numeric(value.metrics?.selectedEvidenceBytes)) metrics.evidenceBytes = value.metrics.selectedEvidenceBytes;
   if (value.mode === "cache") metrics.cacheHits = 1;
   if (value.mode === "bypass" || value.mode === "local") metrics.localBypasses = 1;
+  if (value.mode === "local-fallback") metrics.localFallbacks = 1;
   if (name === "read_selected_evidence" && typeof value.content === "string") {
     metrics.followupBytes = Buffer.byteLength(value.content);
     metrics.followupReads = 1;

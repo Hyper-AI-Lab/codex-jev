@@ -26,7 +26,7 @@ async function fixture(t) {
 test('measurement cohorts keep legacy, ordinary and comparison usage separate', async t => {
   const f = await fixture(t), store = new Store(f.home);
   t.after(() => store.close());
-  const row = { trialId: 'qualified', workspaceHash: hash(f.root), sessionId: randomUUID(), mode: 'jev', metrics: { jevInputTokens: 10 } };
+  const row = { trialId: 'qualified', workspaceHash: hash(f.root), sessionId: randomUUID(), mode: 'jev', metrics: { jevRequests: 1, jevInputTokens: 10 } };
   store.measure(row);
   store.measure({ ...row, revision: hash('new-build'), origin: 'ordinary' });
   store.measure({ ...row, revision: hash('new-build'), origin: 'comparison' });
@@ -35,6 +35,18 @@ test('measurement cohorts keep legacy, ordinary and comparison usage separate', 
   assert.equal(result.modes.jev.jevInputTokens, 30);
   assert.deepEqual(new Set(result.cohorts.map(r => r.origin)), new Set(['unattributed', 'ordinary', 'comparison']));
   assert.throws(() => store.measure({ ...row, origin: 'raw-prompt' }), { code: 'invalid_metrics' });
+});
+
+test('aggregate cache metrics discard historical provider usage without changing accounting', async t => {
+  const f = await fixture(t), store = new Store(f.home);
+  t.after(() => store.close());
+  store.measure({ trialId: randomUUID(), workspaceHash: hash(f.root), sessionId: randomUUID(), mode: 'cache',
+    metrics: { jevRequests: 0, jevInputTokens: 1200, jevOutputTokens: 50, selectedEvidenceBytes: 400 } });
+  const result = store.measurements();
+  assert.equal(result.modes.cache.jevInputTokens, undefined);
+  assert.equal(result.modes.cache.jevOutputTokens, undefined);
+  assert.equal(result.modes.cache.selectedEvidenceBytes, 400);
+  assert.deepEqual(store.status(), []);
 });
 
 test('trial needs authorization and retention proof; activation is expiring, root-bound and not qualified', async t => {

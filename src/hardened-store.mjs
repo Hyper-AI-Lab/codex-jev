@@ -174,6 +174,7 @@ export class Store {
     const names = ['candidateEvidenceBytes', 'localPageEvidenceBytes', 'selectedEvidenceBytes', 'retrievalMs', 'selectionMs',
       'followupReadBytes', 'followupReads', 'jevRequests', 'jevInputTokens', 'jevOutputTokens'];
     const value = Object.fromEntries(names.filter(key => Number.isFinite(metrics[key]) && metrics[key] >= 0).map(key => [key, metrics[key]]));
+    if (!(value.jevRequests > 0)) { delete value.jevInputTokens; delete value.jevOutputTokens; }
     this.db.exec('BEGIN IMMEDIATE');
     try {
       this.db.prepare('INSERT INTO retrieval_metrics(at,trial_id,workspace_hash,session_id,mode,value,revision,origin) VALUES(?,?,?,?,?,?,?,?)')

@@ -34,16 +34,24 @@ def recovery_command(payload, home):
         args = shlex.split(command)
     except (ValueError, TypeError):
         return False
-    # Exact read-only status command only; no compound shell commands or arbitrary args.
+    # Exact recovery entrypoints only; --acknowledge remains an explicit owner
+    # attestation. Recognizing the command itself never clears the halt.
     base = [
         str(Path(sys.executable).resolve()),
         str(Path(__file__).resolve()),
         "status",
     ]
-    return command == shlex.join(args) and args in (
+    recovery_args = (
         base,
         base + ["--codex-home", str(home.codex)],
     )
+    prefix = base[:-1]
+    recovery_args += (
+        prefix + ["resume", "--acknowledge"],
+        prefix + ["resume", "--codex-home", str(home.codex), "--acknowledge"],
+        prefix + ["resume", "--acknowledge", "--codex-home", str(home.codex)],
+    )
+    return command == shlex.join(args) and args in recovery_args
 
 
 def deny(reason="Jev recovery failed; inspect local status before further changes."):
@@ -130,6 +138,11 @@ def run_hook(home, payload):
     if event == "PreToolUse" and recovery_command(payload, home):
         return {}
     home.ensure()
+    from worker_quota import detected
+
+    if detected(payload):
+        halt(home, "codex", "native_worker_quota")
+        return {"continue": False, "systemMessage": "Native worker quota exhausted. Work is halted and checkpointed; owner-authorized recovery is required. No model escalation or retry."}
     if event == "PreToolUse" and home.halted():
         if recovery_command(payload, home):
             return {}
@@ -173,6 +186,14 @@ def run_hook(home, payload):
         pass
     guard = Guard(home, root, session)
     previous = read_json(guard.runtime / "latest.json")
+    routing = {"state": "not_covered", "reason": "not_tool_boundary"}
+    if event in {"PreToolUse", "PostToolUse"}:
+        from retrieval import routing_decision
+
+        try:
+            routing = routing_decision(home, payload, root)
+        except Exception:
+            routing = {"state": "native_exception", "reason": "classifier_unavailable"}
     if event == "SessionStart":
         # Do not overwrite the last recovery checkpoint before reconciling it.
         if not previous:
@@ -186,7 +207,8 @@ def run_hook(home, payload):
         except Exception:
             pass
         guard.close_session()
-    elif event in {"PreToolUse", "PostToolUse"} and payload.get("tool_name") in READ_ONLY_EVIDENCE_TOOLS and previous:
+    elif event in {"PreToolUse", "PostToolUse"} and previous and (
+            payload.get("tool_name") in READ_ONLY_EVIDENCE_TOOLS or routing["state"] == "native"):
         with guard.locked():
             guard.verify_latest()
     elif event in {
@@ -202,14 +224,15 @@ def run_hook(home, payload):
         guard.checkpoint(event)
     home.log_callback(event, session, "verified")
     if event == "PreToolUse":
-        from retrieval import routing_decision
-
-        try:
-            routing = routing_decision(home, payload, root)
-        except Exception:
-            routing = {"state": "native_exception", "reason": "classifier_unavailable"}
         if routing["state"] != "not_covered":
             home.log_callback("RetrievalRouting", session, routing["state"] + ":" + routing["reason"])
+            try:
+                from measurements import record
+
+                record(home, kind="retrieval_routing", values={"routing_" + routing["state"]: 1},
+                       session=session, turn=payload.get("turn_id"), event_id=payload.get("tool_use_id"))
+            except Exception:
+                pass
         if routing["state"] == "redirect":
             return deny("Broad native retrieval paused by the Jev retrieval preference. Use "
                         + routing["tool"] + " for this authorized workspace, then exact hash-verified reads. "
@@ -259,6 +282,7 @@ def parser():
         "usage-register",
         "usage-collect",
         "invocations-report",
+        "task-report",
         "recovery-verify",
     ):
         cmd = sub.add_parser(name)
@@ -267,6 +291,9 @@ def parser():
             cmd.add_argument("--format", choices=("json", "markdown"), default="json")
         if name == "invocations-report":
             cmd.add_argument("--task", required=True)
+        if name == "task-report":
+            cmd.add_argument("--task", required=True)
+            cmd.add_argument("--format", choices=("json", "markdown"), default="json")
         if name in {"usage-register", "usage-collect"}:
             cmd.add_argument("--history", type=Path, required=True)
             cmd.add_argument("--task", required=True)
@@ -332,6 +359,13 @@ def main():
             from invocations import usage_report
 
             value = usage_report(home, args.task)
+        elif args.action == "task-report":
+            from task_report import markdown, report
+
+            value = report(home, args.task)
+            if args.format == "markdown":
+                print(markdown(value))
+                return
         elif args.action == "metrics-report":
             from measurements import report
 

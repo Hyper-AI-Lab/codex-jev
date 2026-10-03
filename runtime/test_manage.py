@@ -15,6 +15,33 @@ from test_support import RuntimeCase
 
 
 class ManageTests(RuntimeCase):
+    def test_verified_native_read_uses_fast_checkpoint_path_unknown_command_does_not(self):
+        hook(self.home, self.payload("SessionStart"))
+        payload = self.payload()
+        payload["tool_input"]["cmd"] = "cat source.txt"
+        with patch.object(Guard, "collect", side_effect=AssertionError("read must not recapture")):
+            self.assertEqual(hook(self.home, payload), {})
+            self.assertEqual(hook(self.home, {**payload, "hook_event_name": "PostToolUse"}), {})
+        payload["tool_input"]["cmd"] = "python arbitrary.py"
+        with patch.object(Guard, "checkpoint") as capture:
+            hook(self.home, payload)
+            capture.assert_called_once()
+
+    def test_exact_acknowledged_recovery_command_is_not_blocked_by_its_own_halt(self):
+        from manage import recovery_command
+
+        halt(self.home, "codex", "test_limit")
+        base = [str(Path(sys.executable).resolve()), str(MANAGE)]
+        payload = self.payload()
+        payload["tool_input"]["cmd"] = shlex.join(base + ["resume", "--codex-home", str(self.home.codex), "--acknowledge"])
+        self.assertTrue(recovery_command(payload, self.home))
+        self.assertEqual(hook(self.home, payload), {})
+        self.assertTrue(self.home.halted())  # Classifying the command never clears it.
+        for args in (["resume"], ["resume", "--acknowledge", "--codex-home", "/wrong"],
+                     ["resume", "--acknowledge", ";", "true"]):
+            payload["tool_input"]["cmd"] = shlex.join(base + args)
+            self.assertFalse(recovery_command(payload, self.home))
+
     def test_broad_retrieval_redirect_has_no_rewrite_and_preserves_native_commands(self):
         hook(self.home, self.payload("SessionStart"))
         self.state("config.json", {"enabled": True, "allowed_roots": [str(self.root)]})

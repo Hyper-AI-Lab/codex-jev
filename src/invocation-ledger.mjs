@@ -9,7 +9,7 @@ const OPERATIONS = new Set([
 const ORIGINS = new Set(['ordinary', 'synthetic', 'comparison', 'unattributed']);
 const METRICS = new Set([
   'responseBytes', 'durationMs', 'jevRequests', 'jevInputTokens', 'jevOutputTokens', 'retrievalMs', 'selectionMs',
-  'evidenceBytes', 'followupBytes', 'followupReads', 'cacheHits', 'localBypasses',
+  'evidenceBytes', 'followupBytes', 'followupReads', 'cacheHits', 'localBypasses', 'localFallbacks',
 ]);
 const MAX_ROWS = 10000;
 const RETENTION_MS = 30 * 86400000;

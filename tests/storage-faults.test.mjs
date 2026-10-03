@@ -80,7 +80,7 @@ test('corrupt database is not reset or silently replaced', async t => {
 test('expired numeric detail retains compact totals without duplicate migration or unbounded cohort growth', async t => {
   const f = await fixture(t); let store = new Store(f.home);
   t.after(() => store.close());
-  const row = { trialId: 'qualified', workspaceHash: hash(f.root), sessionId: randomUUID(), mode: 'jev', metrics: { jevInputTokens: 10 }, origin: 'ordinary' };
+  const row = { trialId: 'qualified', workspaceHash: hash(f.root), sessionId: randomUUID(), mode: 'jev', metrics: { jevRequests: 1, jevInputTokens: 10 }, origin: 'ordinary' };
   for (let i = 0; i < 150; i++) store.measure({ ...row, revision: hash(`${i}`) });
   store.db.prepare('UPDATE retrieval_metrics SET at=?').run(Date.now() - 31 * 86400000);
   store.close(); store = new Store(f.home);

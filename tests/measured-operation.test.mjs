@@ -23,6 +23,13 @@ test('cache hits never claim repeated provider token usage', () => {
   assert.equal(result.jevOutputTokens, undefined);
 });
 
+test('local fallbacks are counted separately from free small-result bypasses', () => {
+  const fallback = operationMetrics('search_workspace_evidence', { mode: 'local-fallback', metrics: { jevRequests: 0 } }, {}, 2);
+  assert.equal(fallback.localFallbacks, 1);
+  assert.equal(fallback.localBypasses, undefined);
+  assert.equal(operationMetrics('search_workspace_evidence', { mode: 'bypass' }, {}, 2).localBypasses, 1);
+});
+
 test('full envelopes and exact follow-up bytes are measured without content storage', async t => {
   const service = await fixture(t);
   const response = await measuredOperation(service, 'read_selected_evidence', { evidenceId: 'NEVER-STORE-INPUT' },
