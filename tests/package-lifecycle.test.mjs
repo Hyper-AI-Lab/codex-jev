@@ -15,7 +15,9 @@ test('offline package contains recovery runtime and survives isolated install, u
     { cwd: resolve('.'), env, timeout: 60000, maxBuffer: 8 * 1024 * 1024 });
   const info = JSON.parse(stdout)[0], names = new Set(info.files.map(item => item.path));
   for (const required of ['runtime/manage.py', 'runtime/common.py', 'runtime/installer.py', 'runtime/recovery.py',
-    'runtime/measurements.py', 'runtime/telemetry.py', 'runtime/observer.py', 'dist/server.mjs', 'dist/live-smoke.mjs',
+    'runtime/measurements.py', 'runtime/telemetry.py', 'runtime/observer.py', 'runtime/retrieval.py',
+    'runtime/invocations.sql', 'runtime/invocations.py', 'runtime/history_usage.py', 'src/cli-task.mjs',
+    'dist/server.mjs', 'dist/live-smoke.mjs',
     'src/private-read.mjs', 'src/process-identity.mjs', 'src/retrieval-archive.mjs', 'scripts/reservations.mjs', 'eslint.config.mjs', 'LICENSE',
     'benchmarks/fixtures/tenant-cache/src/cache.mjs', 'benchmarks/evaluation-v2.manifest.json', 'benchmarks/README.md',
     'NOTICE.md', 'THIRD_PARTY_NOTICES.txt', 'CONTRIBUTING.md', 'CODE_OF_CONDUCT.md', 'CHANGELOG.md']) assert.ok(names.has(required), required);
