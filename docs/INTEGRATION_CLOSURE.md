@@ -62,8 +62,8 @@ checked separately. No finding is promoted to a defect without source verificati
 | 2. One maintained implementation | Complete | `ENTRYPOINTS.md`; two accounting regressions reproduced before repair |
 | 3. Native usage collection | Implementation verified | 101 Python / 205 Node tests; seven real task responses captured by manual collection; hook/collector rollout remains step 9 |
 | 4. Verified operation attribution | Implementation verified | 219 Node / 114 Python tests; real stdio MCP fixture links exact native receipts; rollout pending |
-| 5. Operational retrieval default | Next | Bounded classifier; no arbitrary shell rewriting |
-| 6. Workspace and follow-up usability | Pending | No deployed changes |
+| 5. Operational retrieval default | Implementation verified | 126 Python tests including 9 classifier and 19 hook tests; precise/native exceptions preserved; rollout pending |
+| 6. Workspace and follow-up usability | Next | Persistent, task-bound CLI references without relaxing MCP roots |
 | 7. Evidence selection | Pending | No deployed changes |
 | 8. Overhead and recovery | Pending | No deployed changes |
 | 9. Immutable rollout | Pending | Installed private bundle retained |

@@ -15,6 +15,48 @@ from test_support import RuntimeCase
 
 
 class ManageTests(RuntimeCase):
+    def test_broad_retrieval_redirect_has_no_rewrite_and_preserves_native_commands(self):
+        hook(self.home, self.payload("SessionStart"))
+        self.state("config.json", {"enabled": True, "allowed_roots": [str(self.root)]})
+        payload = self.payload()
+        payload["tool_input"]["cmd"] = 'rg "broad discovery" .'
+        response = hook(self.home, payload)
+        self.denied(response)
+        self.assertIn("search_workspace_evidence", json.dumps(response))
+        self.assertNotIn("updatedInput", json.dumps(response))
+        for command in ('rg source_hash .', 'cat source.txt', 'npm test', 'git diff', 'rg pattern . | head'):
+            payload["tool_input"]["cmd"] = command
+            self.assertEqual(hook(self.home, payload), {})
+        callbacks = self.read_state("callbacks.json")["events"]
+        self.assertTrue(any(e["result"] == "unclassified:unsupported_shell" for e in callbacks))
+        self.assertNotIn("broad discovery", json.dumps(callbacks))
+
+    def test_owner_native_exception_is_exact_and_expiring(self):
+        from common import sha
+        from time import time
+
+        hook(self.home, self.payload("SessionStart"))
+        self.state("config.json", {"enabled": True})
+        payload = self.payload()
+        payload["tool_input"]["cmd"] = 'rg pattern .'
+        entry = {"digest": sha((str(self.root) + "\nrg pattern .").encode()),
+                 "expires_at": time() + 300, "reason": "owner_requested"}
+        self.state("retrieval-policy.json", {"native_exceptions": [entry]})
+        self.assertEqual(hook(self.home, payload), {})
+        payload["tool_input"]["cmd"] = 'rg different .'
+        self.denied(hook(self.home, payload))
+        payload["tool_input"]["cmd"] = 'rg pattern .'
+        entry["expires_at"] = time() - 1
+        self.state("retrieval-policy.json", {"native_exceptions": [entry]})
+        self.denied(hook(self.home, payload))
+
+    def test_routing_failure_does_not_weaken_quota_or_recovery(self):
+        hook(self.home, self.payload("SessionStart"))
+        with patch("retrieval.routing_decision", side_effect=ValueError("private synthetic")):
+            self.assertEqual(hook(self.home, self.payload()), {})
+            halt(self.home, "codex", "test_limit")
+            self.denied(hook(self.home, self.payload()))
+
     def test_concurrent_hook_processes_preserve_a_verifiable_checkpoint(self):
         hook(self.home, self.payload("SessionStart"))
         self.write("source.txt", "dirty state remains local\n")

@@ -201,6 +201,19 @@ def run_hook(home, payload):
     }:
         guard.checkpoint(event)
     home.log_callback(event, session, "verified")
+    if event == "PreToolUse":
+        from retrieval import routing_decision
+
+        try:
+            routing = routing_decision(home, payload, root)
+        except Exception:
+            routing = {"state": "native_exception", "reason": "classifier_unavailable"}
+        if routing["state"] != "not_covered":
+            home.log_callback("RetrievalRouting", session, routing["state"] + ":" + routing["reason"])
+        if routing["state"] == "redirect":
+            return deny("Broad native retrieval paused by the Jev retrieval preference. Use "
+                        + routing["tool"] + " for this authorized workspace, then exact hash-verified reads. "
+                        "No shell command was rewritten or executed. Precise reads and verification stay native.")
     if event in {"PreToolUse", "PostToolUse"} and payload.get("tool_name") in READ_ONLY_EVIDENCE_TOOLS:
         try:
             from invocations import post_tool, pre_tool
