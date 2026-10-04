@@ -145,6 +145,28 @@ disconnect requires coordination. The local history fallback also reports an
 oversized record; complete automatic usage coverage remains unverified. Neither
 the warning repair nor hook callbacks establish efficiency or closure.
 
+## Post-Restart Verification: 2026-10-04
+
+The two reported startup warnings are resolved in the current state: both the
+installed CLI and running app server report 0.160.0; `SessionEnd` is three seconds.
+The actual desktop connection still verifies the immutable Jev release, its
+collector is active, and native hooks now produce one verified task/turn receipt
+for `evidence_status`. That single status call does not establish full retrieval
+attribution or efficiency.
+
+The one-shot supervisor did not complete successfully: after verified graceful
+shutdown it failed with `version_query_failed`, including its recovery checks.
+The reconnected desktop subsequently has a directly launched 0.160.0 server.
+Do not attribute that successful reconnection to a completed native managed
+upgrade or retry the consumed one-shot. Historical managed-package metadata still
+reports 0.146.0 and is not the running executable. Supervisor recovery robustness
+remains an explicit follow-up, not a hidden success.
+
+Native usage now has 31 retained observations, but the history fallback still
+reports an oversized record. Complete coverage, two ordinary-work observations
+and defensible efficiency conclusions remain pending. No further owner action is
+needed for the two warning fixes.
+
 ## Research and Limits
 
 [Codex observability](https://learn.chatgpt.com/docs/config-file/config-advanced)
