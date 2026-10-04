@@ -65,8 +65,8 @@
       "sha256": "cff75dbc03f62a56a81b169e6f8a51c2f8cfe6314a2896af2389329a59c83106"
     },
     "runtime/observer.py": {
-      "bytes": 11857,
-      "sha256": "3a067eafe2ebfa07c2b27382d4a4c2dd273abb0265a07f53a681ba3bf55c9748"
+      "bytes": 12600,
+      "sha256": "4e885275ae814f4c74feb7aa7ee615ef16061676929c43350b744bf187df7fc7"
     },
     "runtime/recovery.py": {
       "bytes": 29039,

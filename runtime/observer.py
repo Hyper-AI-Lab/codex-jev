@@ -6,6 +6,7 @@ import copy
 import json
 import os
 import plistlib
+import re
 import shlex
 import sys
 import tomllib
@@ -14,6 +15,38 @@ from pathlib import Path
 from common import atomic_write, encoded, locked, no_symlinks, now
 from common import private_directory, read_bytes, read_json, sha, write_transaction
 from installer import CHECKOUT, block, same_owned
+
+
+def reconcile_otel_fragment(raw, record):
+    if not record or same_owned(raw, record) or record.get("sha256") != sha(record.get("text", "").encode()):
+        return raw, record
+    begin, end = "# BEGIN jev-context:observer-otel", "# END jev-context:observer-otel"
+    if raw.count(begin) != 1 or raw.count(end) != 1 or raw.index(begin) >= raw.index(end):
+        return raw, record
+    start, stop = raw.index(begin), raw.index(end)
+    fragment = raw[start:stop]
+    prior = tomllib.loads(record["text"])
+    native = tomllib.loads(raw)
+    if set(prior) != {"otel"} or native.get("otel") != prior["otel"]:
+        return raw, record
+    # Native config writers may insert unrelated tables before a trailing owned
+    # comment. Move only that comment, never adopt the inserted trust/config data.
+    boundaries = [m.start() for m in re.finditer(r"(?m)^\s*\[", fragment)] + [len(fragment)]
+    for boundary in boundaries:
+        prefix = fragment[:boundary]
+        try:
+            if tomllib.loads(prefix) != prior:
+                continue
+        except tomllib.TOMLDecodeError:
+            continue
+        owned = prefix.rstrip("\n") + "\n" + end + "\n"
+        tail = raw[stop + len(end):]
+        if tail.startswith("\n"):
+            tail = tail[1:]
+        updated = raw[:start] + owned + fragment[boundary:] + tail
+        if tomllib.loads(updated) == native:
+            return updated, {"text": owned, "sha256": sha(owned.encode())}
+    return raw, record
 
 
 def service_definition(home, port, platform, service_root):
@@ -121,15 +154,7 @@ def install_observer(home, port=43181, platform=sys.platform, service_root=None)
         )
         addition = block("observer-otel", body)
         record = previous.get("otel")
-        if record and not same_owned(raw, record) and record.get("sha256") == sha(record.get("text", "").encode()):
-            begin, end = "# BEGIN jev-context:observer-otel", "# END jev-context:observer-otel"
-            if raw.count(begin) == 1 and raw.count(end) == 1 and raw.index(begin) < raw.index(end):
-                current = raw[raw.index(begin):raw.index(end) + len(end)]
-                if raw[raw.index(end) + len(end):].startswith("\n"):
-                    current += "\n"
-                prior_value, current_value = tomllib.loads(record["text"]), tomllib.loads(current)
-                if set(current_value) == {"otel"} and current_value == prior_value and native.get("otel") == current_value["otel"]:
-                    record = {"text": current, "sha256": sha(current.encode())}
+        raw, record = reconcile_otel_fragment(raw, record)
         if previous.get("status") not in {None, "uninstalled", "pending", "installed"}:
             raise ValueError("Resolve observer ownership conflicts before reinstalling")
         if record:

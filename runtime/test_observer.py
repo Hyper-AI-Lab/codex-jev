@@ -93,6 +93,19 @@ class ObserverTests(RuntimeCase):
         self.assertEqual(file.read_text(), formatted)
         self.assertTrue(uninstall_observer(self.home)["uninstalled"])
 
+    def test_native_trust_table_inserted_inside_markers_is_never_owned_or_removed(self):
+        self.install()
+        file = self.home.codex / "config.toml"
+        trust = '[hooks.state]\nfixture = "native-owner-controlled"\n'
+        file.write_text(file.read_text().replace("# END jev-context:observer-otel", trust + "# END jev-context:observer-otel"))
+        before = tomllib.loads(file.read_text())
+        self.assertTrue(self.install()["installed"])
+        self.assertEqual(tomllib.loads(file.read_text()), before)
+        owned = self.read_state("observer-installation.json")["otel"]["text"]
+        self.assertNotIn("hooks.state", owned)
+        self.assertTrue(uninstall_observer(self.home)["uninstalled"])
+        self.assertEqual(tomllib.loads(file.read_text())["hooks"], before["hooks"])
+
     def test_edited_service_or_otel_preserved(self):
         result = self.install()
         service = Path(result["service_path"])
