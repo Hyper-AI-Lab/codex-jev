@@ -45,8 +45,8 @@
       "sha256": "e5e4a8a2949a9c1e1df9e048565ce2e0090598e7381fc71ac599e792ada3b34a"
     },
     "runtime/installer.py": {
-      "bytes": 25969,
-      "sha256": "577678de2ad8ce3bb2af5ced372343b3b5160918b3a36712eaa856779de8006f"
+      "bytes": 25985,
+      "sha256": "002e69b22921212d52de52fad5f71ca3a810fe4373fc7c2df4bf53c2492e511c"
     },
     "runtime/invocations.py": {
       "bytes": 9835,

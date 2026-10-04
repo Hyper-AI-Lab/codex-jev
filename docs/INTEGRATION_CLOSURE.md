@@ -66,7 +66,7 @@ checked separately. No finding is promoted to a defect without source verificati
 | 6. Workspace and follow-up usability | Implementation verified | 11 CLI/entrypoint/package tests; actual separate CLI processes; declared identity distinguished from native receipts |
 | 7. Evidence selection | Implementation verified | 227 Node tests; default-preview/source-diversity regressions and frozen offline retention fixtures; rollout pending |
 | 8. Overhead and recovery | Implementation verified | 133 Python / 229 Node tests; exact acknowledged resume, covered worker quota halt, numeric task reports; offline read-hook median 864 to 201 ms, not whole-session savings |
-| 9. Immutable rollout | Desktop release and live retrieval verified; renewed hook trust/attribution pending | 232 Node / 145 Python tests; 55 deployed components verified; actual desktop paid selection/cache/exact read/pagination/workspace denial pass; automatic task attribution still unverified |
+| 9. Immutable rollout | Desktop retrieval and live hooks observed; attribution/history coverage incomplete | 232 Node / 145 Python prior full suites; 17 installer checks after timeout repair; actual desktop paid selection/cache/exact read/pagination/workspace denial pass; automatic task attribution still unverified |
 | 10. Ordinary-work observation and closure | Pending | No savings claim |
 
 ## Rollout Checkpoint: 2026-10-04
@@ -121,6 +121,29 @@ callbacks, exact task/turn receipts and automatic history collection. The live
 collector receives OTLP data, but completion candidates omit turn IDs; they are
 not assigned speculatively. Zero verified retrieval receipts is missing coverage,
 not zero usage. No trust state was modified or bypassed. Step 10 remains pending.
+
+## Startup Warning Repair: 2026-10-04
+
+After owner hook approval, actual native callbacks resumed, including retrieval
+routing. The owner reported a `SessionEnd` timeout-clamping warning: the installer
+incorrectly generated 30 seconds for an event limited to three. A regression
+reproduced the defect before repair; all 17 installer tests then passed, including
+legacy upgrade and preservation of unrelated hooks and native trust records.
+
+The installed configuration and its ownership record now set only `SessionEnd`
+to three seconds. The other nine hook definitions, native configuration (including
+trust), main model, workers and budgets are unchanged. The existing immutable
+runtime remains hash-verified; source and the next release manifest contain the
+correct installer default. This targeted configuration repair avoids replacing
+all approved command paths. A native client may request review of the changed
+event; trust was not fabricated.
+
+A separate host warning is confirmed: CLI 0.160.0 with a directly launched
+0.157.1 background server. Read-only metadata shows this conversation active on
+that server. No restart was performed or old maintenance job replayed; a brief
+disconnect requires coordination. The local history fallback also reports an
+oversized record; complete automatic usage coverage remains unverified. Neither
+the warning repair nor hook callbacks establish efficiency or closure.
 
 ## Research and Limits
 

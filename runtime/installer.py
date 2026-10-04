@@ -303,7 +303,7 @@ def install(home, node, workspace, entrypoint="dist", preserve_guidance_edits=Fa
             handler = {
                 "type": "command",
                 "command": command,
-                "timeout": 3 if event == "Interrupt" else 30,
+                "timeout": 3 if event in {"Interrupt", "SessionEnd"} else 30,
             }
             if event == "SessionStart":
                 handler["additionalContextLimit"] = 400

@@ -7,7 +7,7 @@ import tomllib
 from pathlib import Path
 from unittest.mock import patch
 
-from common import atomic_write, read_json
+from common import atomic_write, encoded, read_json, sha
 from installer import (
     CHECKOUT,
     DEFAULTS,
@@ -34,6 +34,35 @@ NODE = Path(
 class InstallerTests(RuntimeCase):
     def install(self):
         return install(self.home, NODE, self.root)
+
+    def test_lifecycle_timeout_limits_and_legacy_upgrade_preserve_trust(self):
+        self.install()
+        hooks_path = self.home.codex / "hooks.json"
+        hooks = read_json(hooks_path)
+        for event in EVENTS:
+            expected = 3 if event in {"Interrupt", "SessionEnd"} else 30
+            self.assertEqual(hooks["hooks"][event][0]["hooks"][0]["timeout"], expected)
+
+        # Recreate an owned pre-fix definition, without changing native trust.
+        manifest = self.read_state("installation.json")
+        group = hooks["hooks"]["SessionEnd"][0]
+        group["hooks"][0]["timeout"] = 30
+        manifest["hooks"]["SessionEnd"] = {"group": group, "sha256": sha(encoded(group))}
+        atomic_write(hooks_path, encoded(hooks))
+        self.state("installation.json", manifest)
+        config_path = self.home.codex / "config.toml"
+        native = config_path.read_text() + '\n[hooks.state.fixture]\ntrusted_hash = "owner-controlled"\n'
+        self.native("config.toml", native)
+        self.install()
+        updated = read_json(hooks_path)
+        self.assertEqual(updated["hooks"]["SessionEnd"][0]["hooks"][0]["timeout"], 3)
+        self.assertEqual(config_path.read_text(), native)
+        for event in EVENTS:
+            if event != "SessionEnd":
+                self.assertEqual(updated["hooks"][event], hooks["hooks"][event])
+        self.assertTrue(uninstall(self.home)["uninstalled"])
+        self.assertEqual(tomllib.loads(config_path.read_text())["hooks"]["state"]["fixture"],
+                         {"trusted_hash": "owner-controlled"})
 
     def test_idempotent_preserves_provider_auth_effort_and_uninstall(self):
         # Deliberately synthetic. Tests never read a real auth file.
