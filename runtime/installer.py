@@ -375,7 +375,7 @@ def install(home, node, workspace, entrypoint="dist", preserve_guidance_edits=Fa
             warnings.append(
                 "Owner disabled hooks; left disabled. Native trust/activation remains pending."
             )
-        if config.get("hooks"):
+        if any(event in config.get("hooks", {}) for event in EVENTS):
             warnings.append("Inline hooks preserved; matching sources run together.")
         secrets = home.path / "secrets"
         private_directory(secrets)

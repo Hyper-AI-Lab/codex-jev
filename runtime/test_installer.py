@@ -217,6 +217,13 @@ class InstallerTests(RuntimeCase):
         self.assertTrue(uninstall(self.home)["uninstalled"])
         self.assertEqual((self.home.codex / "config.toml").read_text(), 'model_reasoning_effort="high"\n')
 
+    def test_native_hook_state_is_not_misreported_as_duplicate_definitions(self):
+        native = '[hooks.state]\nfixture_trust="owner-controlled"\n'
+        file = self.native("config.toml", native)
+        result = self.install()
+        self.assertFalse(any("Inline hooks" in message for message in result["warnings"]))
+        self.assertEqual(tomllib.loads(file.read_text())["hooks"]["state"]["fixture_trust"], "owner-controlled")
+
     def test_doctor_reports_owned_edits_without_mutating_or_manufacturing_trust(self):
         from doctor import inspect
 

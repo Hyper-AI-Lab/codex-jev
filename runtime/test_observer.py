@@ -84,6 +84,15 @@ class ObserverTests(RuntimeCase):
             self.assertFalse(result["installed"])
             self.assertNotIn("SYNTHETIC-PRIVATE-HEADER", str(result))
 
+    def test_semantically_identical_owned_otel_formatting_is_preserved_on_upgrade(self):
+        self.install()
+        file = self.home.codex / "config.toml"
+        formatted = file.read_text().replace("log_user_prompt = false", "log_user_prompt=false # owner formatting")
+        file.write_text(formatted)
+        self.assertTrue(self.install()["installed"])
+        self.assertEqual(file.read_text(), formatted)
+        self.assertTrue(uninstall_observer(self.home)["uninstalled"])
+
     def test_edited_service_or_otel_preserved(self):
         result = self.install()
         service = Path(result["service_path"])

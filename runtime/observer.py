@@ -121,6 +121,15 @@ def install_observer(home, port=43181, platform=sys.platform, service_root=None)
         )
         addition = block("observer-otel", body)
         record = previous.get("otel")
+        if record and not same_owned(raw, record) and record.get("sha256") == sha(record.get("text", "").encode()):
+            begin, end = "# BEGIN jev-context:observer-otel", "# END jev-context:observer-otel"
+            if raw.count(begin) == 1 and raw.count(end) == 1 and raw.index(begin) < raw.index(end):
+                current = raw[raw.index(begin):raw.index(end) + len(end)]
+                if raw[raw.index(end) + len(end):].startswith("\n"):
+                    current += "\n"
+                prior_value, current_value = tomllib.loads(record["text"]), tomllib.loads(current)
+                if set(current_value) == {"otel"} and current_value == prior_value and native.get("otel") == current_value["otel"]:
+                    record = {"text": current, "sha256": sha(current.encode())}
         if previous.get("status") not in {None, "uninstalled", "pending", "installed"}:
             raise ValueError("Resolve observer ownership conflicts before reinstalling")
         if record:
