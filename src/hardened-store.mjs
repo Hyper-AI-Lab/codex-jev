@@ -165,6 +165,11 @@ export class Store {
   status() {
     return this.db.prepare('SELECT month,COUNT(*) requests,SUM(cost) reserved_or_spent_micro_usd FROM requests GROUP BY month ORDER BY month DESC LIMIT 12').all();
   }
+  accessEvidence() {
+    const row = this.db.prepare("SELECT COUNT(*) count, MAX(at) lastAt FROM requests WHERE status='completed'").get();
+    return { historicalSuccessfulRequests: row.count, lastSuccessfulRequestAt: row.lastAt,
+      currentKeyVerified: false, scope: 'retained_accounting_history_not_current_key_or_effectiveness' };
+  }
   measure({ trialId, workspaceHash, sessionId, mode, metrics, revision = 'legacy', origin = 'unattributed' }) {
     if (!/^[a-f0-9]{64}$/.test(workspaceHash) || !/^[a-f0-9-]{36}$/.test(sessionId) ||
         !['jev', 'cache', 'bypass', 'local-fallback', 'exact-read'].includes(mode) ||

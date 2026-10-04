@@ -13,16 +13,21 @@ from pathlib import Path
 
 from common import atomic_write, encoded, locked, no_symlinks, now
 from common import private_directory, read_bytes, read_json, sha, write_transaction
-from installer import MANAGE, block, same_owned
+from installer import CHECKOUT, block, same_owned
 
 
 def service_definition(home, port, platform, service_root):
+    from releases import materialize, verify
+
+    installation = read_json(home.path / "installation.json")
+    release = (verify(Path(installation["release_root"]), sealed=True) if installation.get("release_root")
+               else materialize(home, CHECKOUT))
     root = no_symlinks(Path(service_root or Path.home()).expanduser())
     suffix = sha(str(home.codex).encode())[:12]
     args = [
         str(Path(sys.executable).resolve()),
         "-B",
-        str(MANAGE),
+        str(Path(release["root"]) / "runtime/manage.py"),
         "telemetry",
         "--codex-home",
         str(home.codex),
@@ -156,10 +161,10 @@ def install_observer(home, port=43181, platform=sys.platform, service_root=None)
         if parsed != expected:
             raise ValueError("Observer TOML merge changed unrelated configuration")
         existing_service = read_bytes(service_path)
-        if service_path.exists() and not (
-            previous.get("service_sha256") == sha(existing_service)
-            and existing_service == service
-        ):
+        owned_hashes = {previous.get("service_sha256")}
+        if previous.get("status") == "pending":
+            owned_hashes.add(previous.get("previous_service_sha256"))
+        if service_path.exists() and sha(existing_service) not in owned_hashes:
             return {
                 "installed": False,
                 "started": False,
@@ -177,9 +182,11 @@ def install_observer(home, port=43181, platform=sys.platform, service_root=None)
             "start_commands": start,
             "stop_commands": stop,
             "updated_at": now(),
+            "previous_service_sha256": sha(existing_service) if existing_service else None,
         }
         atomic_write(path, encoded(manifest))
         manifest["status"] = "installed"
+        manifest.pop("previous_service_sha256", None)
         write_transaction(
             {
                 home.codex / "config.toml": raw.encode(),

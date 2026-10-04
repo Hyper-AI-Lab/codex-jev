@@ -34,7 +34,8 @@ class ObserverTests(RuntimeCase):
         self.assertIn("[Service]", text)
         self.assertIn("StandardOutput=null", text)
         self.assertIn("StandardError=null", text)
-        self.assertIn(str(MANAGE), text)
+        self.assertIn(str(self.home.path / "releases"), text)
+        self.assertIn("/runtime/manage.py", text)
         first = (self.home.codex / "config.toml").read_bytes()
         self.install()
         self.assertEqual((self.home.codex / "config.toml").read_bytes(), first)
@@ -121,6 +122,25 @@ class ObserverTests(RuntimeCase):
             self.install()
         self.assertEqual(config.read_text(), 'model_reasoning_effort = "max"\n')
         self.assertTrue(self.install()["installed"])
+
+    def test_owned_service_upgrade_retries_after_interruption_without_adopting_owner_edits(self):
+        first = self.install()
+        path = Path(first["service_path"])
+        old = path.read_bytes()
+        actual_definition = service_definition
+        def upgraded(*args, **kwargs):
+            target, content, start, stop = actual_definition(*args, **kwargs)
+            return target, content + b"# upgraded fixture\n", start, stop
+        def failing(target, data):
+            if target == path:
+                raise OSError("interrupted service update")
+            atomic_write(target, data)
+        with patch("observer.service_definition", side_effect=upgraded):
+            with patch("common.atomic_write", side_effect=failing), self.assertRaises(OSError):
+                self.install()
+            self.assertEqual(path.read_bytes(), old)
+            self.assertTrue(self.install()["installed"])
+            self.assertTrue(path.read_bytes().endswith(b"# upgraded fixture\n"))
 
     def test_conflicting_unowned_service_is_not_overwritten(self):
         path, _, _, _ = service_definition(

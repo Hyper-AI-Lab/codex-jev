@@ -7,8 +7,10 @@ import { configuration, dailyRequestLimit, defaultHome, POLICY, selectionMode } 
 import { evaluationLaunch } from './evaluation-launch.mjs';
 import { measuredOperation } from './measured-operation.mjs';
 import { InvocationLedger } from './invocation-ledger.mjs';
+import { releaseInfo } from './release-info.mjs';
 
 process.umask(0o077);
+const loadedRelease = await releaseInfo(import.meta.url);
 const service = await new EvidenceService({ forceLocal: process.env.JEV_FORCE_LOCAL === '1',
   measurementOrigin: process.env.JEV_MEASUREMENT_ORIGIN || 'ordinary',
   ...await evaluationLaunch(defaultHome(), process.cwd(), process.env.JEV_EVALUATION_MANIFEST, process.env.JEV_EVALUATION_DIGEST) }).init();
@@ -57,7 +59,8 @@ register('evidence_status', 'Report selection enablement and conservative local 
     finally { ledger?.close(); }
   }
   return { enabled: config.enabled, liveValidated: config.live_validated, model: config.model,
-    sourcePolicy: POLICY, loadedBuild: service.buildHash, measurementOrigin: service.measurementOrigin,
+    sourcePolicy: POLICY, loadedBuild: service.buildHash, loadedRelease, workspaceBinding: service.boundRoot,
+    measurementOrigin: service.measurementOrigin,
     selectionMode: service.forceLocal ? 'local_only' : selectionMode(config, service.boundRoot),
     defaultAuthorization: config.default_authorization, effectivenessQualified: config.live_validated,
     maxRequestsPerDay: dailyRequestLimit(config, service.boundRoot),
@@ -67,7 +70,8 @@ register('evidence_status', 'Report selection enablement and conservative local 
       ...(service.forceLocal ? ['comparison_local'] : [])],
     eligibilityNote: 'Configured eligibility only; per-request privacy, size, quota and budget checks still apply.',
     validationBudgetUsd: config.validation_budget_usd, monthlyBudgetUsd: config.monthly_budget_usd, totalBudgetUsd: config.total_budget_usd,
-    accounting: service.store.status(), reservations: service.store.reservations(), hookTrust: 'not_inspected_by_mcp',
+    accounting: service.store.status(), reservations: service.store.reservations(), accessEvidence: service.store.accessEvidence(),
+    hookTrust: 'not_inspected_by_mcp',
     telemetryCoverage: service.store.runtimeMeasurements(),
     invocationCoverage,
     ...(config.measurement_enabled ? { measurements: service.store.measurements(config.default_authorization?.id ?? config.trial?.id) } : {}),

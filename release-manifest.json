@@ -1,0 +1,226 @@
+{
+  "files": {
+    "LICENSE": {
+      "bytes": 1071,
+      "sha256": "7e3d6fe13eb6047a58a27e88b55c34c19ca95c57029b3c4aa8620e92ccaf9375"
+    },
+    "NOTICE.md": {
+      "bytes": 1301,
+      "sha256": "3bf93c593f15776f46a4c288b044335dde55f382a6e609aa665ca23378ebc40e"
+    },
+    "THIRD_PARTY_NOTICES.txt": {
+      "bytes": 307223,
+      "sha256": "86bf0bc3ddb946225d64bc0841ce88099d17e841a5481c822e35d7c6efd4cb23"
+    },
+    "dist/dependency-lock.json": {
+      "bytes": 89221,
+      "sha256": "fe5fd17b11958a30334915328ba91876aff526324160e4d49aaee3086c9934bc"
+    },
+    "dist/live-smoke.mjs": {
+      "bytes": 662023,
+      "sha256": "aaa77502a0043fd65fc5703b6cb7fc80dafa09103c91d2ce5ef39034db8bbecb"
+    },
+    "dist/server.mjs": {
+      "bytes": 1463836,
+      "sha256": "6851eaf41a7d31cfcefb617edb4ae875090d1663a003a6e5c7b13e130c562d79"
+    },
+    "package.json": {
+      "bytes": 2101,
+      "sha256": "f47dbc7679b822881798fa2e1aa38f3d3dcf64f18081303b1aafaf1551767150"
+    },
+    "runtime/common.py": {
+      "bytes": 12673,
+      "sha256": "d5156b6ac354f8a92328b85bc5f89a95dec0451049a6e093d337aac6c2476e8b"
+    },
+    "runtime/doctor.py": {
+      "bytes": 2150,
+      "sha256": "dab6a22f9dc1136aa74eef26cac3cf5816c106a395ab343312131b3668a68f62"
+    },
+    "runtime/hardening_baseline.py": {
+      "bytes": 4672,
+      "sha256": "3ac3497bd4db7d2cf9d32f2ed93152bfafb5c875754e2dc4e8eefb11e92e135f"
+    },
+    "runtime/history_usage.py": {
+      "bytes": 14599,
+      "sha256": "e5e4a8a2949a9c1e1df9e048565ce2e0090598e7381fc71ac599e792ada3b34a"
+    },
+    "runtime/installer.py": {
+      "bytes": 25931,
+      "sha256": "94964f6a2c7e40c5f9c68ecd945eb14793b308b511255e05e40bf645453ecd17"
+    },
+    "runtime/invocations.py": {
+      "bytes": 9835,
+      "sha256": "fe669e31261f0bd9016ebabc4a7bb6d89698ed59f567e83bbfe6316b34181cb3"
+    },
+    "runtime/invocations.sql": {
+      "bytes": 921,
+      "sha256": "1d10f0613ca761d6b4ac07b06de3ed5a198f228712a772d8ddbe742bbb9ac55e"
+    },
+    "runtime/manage.py": {
+      "bytes": 17158,
+      "sha256": "c4d053fb8cc2d06cf160dd1570991a12ce3dc8513c2a67bc98f04c0debc817c9"
+    },
+    "runtime/measurements.py": {
+      "bytes": 12103,
+      "sha256": "cff75dbc03f62a56a81b169e6f8a51c2f8cfe6314a2896af2389329a59c83106"
+    },
+    "runtime/observer.py": {
+      "bytes": 11055,
+      "sha256": "04b5851b66b76db0b5df8ff119149019f909f8eb0c2705ee9752fbff1d5673c5"
+    },
+    "runtime/recovery.py": {
+      "bytes": 29039,
+      "sha256": "dfb3ca336ef7400277290e0d3c66d835eec04971190e89f1b34820ed03600099"
+    },
+    "runtime/releases.py": {
+      "bytes": 6403,
+      "sha256": "041d86c4aa70feb4b53d75d5c552c557105d818563a6f0e4195a428d83da548c"
+    },
+    "runtime/retrieval.py": {
+      "bytes": 10457,
+      "sha256": "c593514284fdc581f213794a1ed32c04cf2facd59b59c8ea91cc2a46d761f3d1"
+    },
+    "runtime/task_report.py": {
+      "bytes": 3877,
+      "sha256": "dee02dd0a0cf3fbf5f19f3021f1d259629328ca5dc8bbdddaf451d644ae296a4"
+    },
+    "runtime/telemetry.py": {
+      "bytes": 16953,
+      "sha256": "727391628a3461b2ffc0eddeeda228130ec1c53bfbc665ca798e45c99b582f34"
+    },
+    "runtime/worker_quota.py": {
+      "bytes": 1501,
+      "sha256": "4e987e7a6ed48c1aa5da67e956da66c0c95f33bb834aebdc07bc200bd8693e1c"
+    },
+    "scripts/actual-mcp-pilot.mjs": {
+      "bytes": 11319,
+      "sha256": "2a2af0df2ebf7e8b60cdfeec39ff1df6a573ea301f10c26b33110c759124fdcb"
+    },
+    "scripts/check-publication.mjs": {
+      "bytes": 1443,
+      "sha256": "469ad6353c50a9fb2f6e3fbfb5ddb1e3657852b09390a8f057ee1e4f13d12a90"
+    },
+    "scripts/comparison-probe.mjs": {
+      "bytes": 2748,
+      "sha256": "9c8282f8d5a66a4082bb711a7813507c4922eb9276b7bf7536aeab8176f31722"
+    },
+    "scripts/evaluation-preflight.mjs": {
+      "bytes": 8995,
+      "sha256": "7f3a64966bbbcc643d8cbfb9d3eb289a7dd4a8653e18b0c5989b755b77904124"
+    },
+    "scripts/hardening-comparison.mjs": {
+      "bytes": 11665,
+      "sha256": "7781b4758ec37d85ea21cfa5995996cc06a9abbafdb531a62246e4671f33ac5d"
+    },
+    "scripts/installed-smoke.mjs": {
+      "bytes": 2035,
+      "sha256": "307463a14f18c49f9dfc70b6999389fe3a47f8887c5f5edd2f72e7ab1170980f"
+    },
+    "scripts/investigate.mjs": {
+      "bytes": 6078,
+      "sha256": "821b13bc1de53b6587f4470339cf5f72a2f8a6492d0271ee7eb94f148b772718"
+    },
+    "scripts/live-smoke.mjs": {
+      "bytes": 806,
+      "sha256": "e45f2f4422e89e0db47b0619019b64afa66a83834e0f7a68ca16ee82f21bdc83"
+    },
+    "scripts/native-packet-pilot.mjs": {
+      "bytes": 20273,
+      "sha256": "c09f69a26b065780802d342980e7737839df2d809e65e9fc3dc1ebc6dae3e1b2"
+    },
+    "scripts/reservations.mjs": {
+      "bytes": 1482,
+      "sha256": "5869fe8d83417f87cb2e5a0ef700c18216d136ee042e8e00f3f58e3b3fdf4047"
+    },
+    "scripts/retrieval-trial.mjs": {
+      "bytes": 6631,
+      "sha256": "6e707c5ec75fc6d54180e982cfc08d75dacd8b56ab2d517828927056c70f99e0"
+    },
+    "scripts/third-party-notices.mjs": {
+      "bytes": 1138,
+      "sha256": "14dd932ff6b9122837daa9712ca1fc17fb5bcff866a4a7a6bba8a5befc212b5c"
+    },
+    "scripts/validate-hardened.mjs": {
+      "bytes": 4023,
+      "sha256": "f260f957e54ebac727ca6d058ac2248a709f75ac13a187c8d5f63feb5c57e637"
+    },
+    "scripts/verify-default.mjs": {
+      "bytes": 4110,
+      "sha256": "6bfa33aaba733f63c384ec3269547f889f1b01f2f1ef5b28b56d73189f632f32"
+    },
+    "src/cli-task.mjs": {
+      "bytes": 1539,
+      "sha256": "64722320c8194093a3b7599ec8573ba6606b44d43710872a621036da2334a480"
+    },
+    "src/discovery.mjs": {
+      "bytes": 3903,
+      "sha256": "d1ffbb31f9db6d5a0e0039c85e5b3a76d69eb1612be75cedf9de148dfcd3753e"
+    },
+    "src/entrypoint-error.mjs": {
+      "bytes": 959,
+      "sha256": "5cb3d6cbc7bb6059807b81a6722b50355c722dd1997f186daaed90173b6d718c"
+    },
+    "src/evaluation-launch.mjs": {
+      "bytes": 1449,
+      "sha256": "5bf08521de8c8d6392887a187d088e20d898628014b67cb37653009ce363b6bd"
+    },
+    "src/evaluation-scope.mjs": {
+      "bytes": 2011,
+      "sha256": "4f666805fe68fc9ff917c0d3cde1470cec68ad7dc42d8d2f5877a9b381c1cd66"
+    },
+    "src/evidence-ranges.mjs": {
+      "bytes": 4581,
+      "sha256": "47285e8469930439378009f39717b98bcb26f6d2cdde38079d30e71029a88ec4"
+    },
+    "src/evidence-service.mjs": {
+      "bytes": 15264,
+      "sha256": "8a11f1332a04301a7277e8e6d538b3dc0d39ace1fc4d4ec8c94bcda98a8b1a13"
+    },
+    "src/hardened-policy.mjs": {
+      "bytes": 16342,
+      "sha256": "9925ee3e93821587511913196752ccc955fe1c2e4a5dd19c868777eb0e937037"
+    },
+    "src/hardened-service.mjs": {
+      "bytes": 29875,
+      "sha256": "2c181fedeb71adf36960ecf16bab48fd37a4677f23634a3e9b1966e009fdfd29"
+    },
+    "src/hardened-store.mjs": {
+      "bytes": 17297,
+      "sha256": "73801ebc0be421ea2fa2edf4f665171d8c91a29823caa38d6bb6f4554fc8dd3e"
+    },
+    "src/investigator.mjs": {
+      "bytes": 23619,
+      "sha256": "2aacddc2dde460c66e6edd587f71f8b3c75a9c1cf782e82efec8d3507062cc85"
+    },
+    "src/invocation-ledger.mjs": {
+      "bytes": 10435,
+      "sha256": "0a56e6686e960397facb0532973f8025fcfd896404bdc05d7123b99745e1c368"
+    },
+    "src/mcp-server.mjs": {
+      "bytes": 6679,
+      "sha256": "756c16ac86f68a26ef500510155e1602eb953cd7e99cca31d3359c35967b399c"
+    },
+    "src/measured-operation.mjs": {
+      "bytes": 2763,
+      "sha256": "a754567f29a003c3b497c252991a37526488dcbf8a5d52c30ce87553a05dbb60"
+    },
+    "src/private-read.mjs": {
+      "bytes": 3372,
+      "sha256": "6476fb7d1551d969a31b41c4537592dc00bc8bf06f496bfb3728fa02ec90865a"
+    },
+    "src/process-identity.mjs": {
+      "bytes": 1676,
+      "sha256": "4462d83a25eae307b05637a75926f6e7028575b9990750279faffd108ca2fae7"
+    },
+    "src/release-info.mjs": {
+      "bytes": 3288,
+      "sha256": "e545a0eceb9dd23c6bebe6eec8a394bf96bcf4b97ad935a820176566d02dd8db"
+    },
+    "src/retrieval-archive.mjs": {
+      "bytes": 1516,
+      "sha256": "f8bea4eb03a498c22a39ac1f78758e03caf3f2dcd0a0d13524c9916fff576d68"
+    }
+  },
+  "schema": 1,
+  "version": "0.4.0-beta.1"
+}

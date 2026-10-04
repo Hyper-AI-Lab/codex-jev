@@ -5,10 +5,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shlex
 import sys
 import time
 from pathlib import Path
+
+sys.dont_write_bytecode = True
 
 from common import Home, atomic_write, encoded, git_root, now, read_json
 from installer import install, status, uninstall
@@ -283,6 +286,7 @@ def parser():
         "usage-collect",
         "invocations-report",
         "task-report",
+        "doctor",
         "recovery-verify",
     ):
         cmd = sub.add_parser(name)
@@ -301,6 +305,7 @@ def parser():
             cmd.add_argument("--node", required=True)
             cmd.add_argument("--workspace", required=True)
             cmd.add_argument("--entrypoint", choices=("source", "dist"), default="dist")
+            cmd.add_argument("--preserve-guidance-edits", action="store_true")
         if name in {"checkpoint", "status", "recovery-verify"}:
             cmd.add_argument("--workspace")
             cmd.add_argument("--task")
@@ -330,10 +335,19 @@ def main():
     args = parser().parse_args()
     try:
         home = Home(args.codex_home)
+        release_root = Path(__file__).resolve().parent.parent
+        if re.fullmatch(r"[0-9a-f]{64}", release_root.name) and args.action != "doctor":
+            from releases import verify
+
+            verify(release_root, sealed=True)
         if args.action == "install":
-            value = install(home, args.node, args.workspace, args.entrypoint)
+            value = install(home, args.node, args.workspace, args.entrypoint, args.preserve_guidance_edits)
         elif args.action == "uninstall":
             value = uninstall(home)
+        elif args.action == "doctor":
+            from doctor import inspect
+
+            value = inspect(home)
         elif args.action == "status":
             value = status(home)
             if args.workspace and args.task:

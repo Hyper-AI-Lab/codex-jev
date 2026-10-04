@@ -1061,10 +1061,10 @@ var require_util = __commonJS({
     var codegen_1 = require_codegen();
     var code_1 = require_code();
     function toHash(arr) {
-      const hash3 = {};
+      const hash4 = {};
       for (const item of arr)
-        hash3[item] = true;
-      return hash3;
+        hash4[item] = true;
+      return hash4;
     }
     exports.toHash = toHash;
     function alwaysValidSchema(it, schema) {
@@ -3352,9 +3352,9 @@ var require_utils = __commonJS({
       let output2 = "";
       for (let i = 0; i < input2.length; i++) {
         if (input2[i] === "%" && i + 2 < input2.length) {
-          const hex3 = input2.slice(i + 1, i + 3);
-          if (isHexPair(hex3)) {
-            const normalizedHex = hex3.toUpperCase();
+          const hex4 = input2.slice(i + 1, i + 3);
+          if (isHexPair(hex4)) {
+            const normalizedHex = hex4.toUpperCase();
             const decoded = String.fromCharCode(parseInt(normalizedHex, 16));
             if (decodeUnreserved && isUnreserved(decoded)) {
               output2 += decoded;
@@ -3374,9 +3374,9 @@ var require_utils = __commonJS({
       for (let i = 0; i < input2.length; i++) {
         const ch = input2[i];
         if (ch === "%" && i + 2 < input2.length) {
-          const hex3 = input2.slice(i + 1, i + 3);
-          if (isHexPair(hex3)) {
-            const normalizedHex = hex3.toUpperCase();
+          const hex4 = input2.slice(i + 1, i + 3);
+          if (isHexPair(hex4)) {
+            const normalizedHex = hex4.toUpperCase();
             const decoded = String.fromCharCode(parseInt(normalizedHex, 16));
             if (decoded !== "." && isUnreserved(decoded)) {
               output2 += decoded;
@@ -3416,9 +3416,9 @@ var require_utils = __commonJS({
       for (let i = 0; i < input2.length; i++) {
         const ch = input2[i];
         if (ch === "%" && i + 2 < input2.length) {
-          const hex3 = input2.slice(i + 1, i + 3);
-          if (isHexPair(hex3)) {
-            output2 += "%" + hex3.toUpperCase();
+          const hex4 = input2.slice(i + 1, i + 3);
+          if (isHexPair(hex4)) {
+            output2 += "%" + hex4.toUpperCase();
             i += 2;
             continue;
           }
@@ -3454,9 +3454,9 @@ var require_utils = __commonJS({
       for (let i = 0; i < input2.length; i++) {
         const ch = input2[i];
         if (ch === "%" && i + 2 < input2.length) {
-          const hex3 = input2.slice(i + 1, i + 3);
-          if (isHexPair(hex3)) {
-            output2 += "%" + hex3.toUpperCase();
+          const hex4 = input2.slice(i + 1, i + 3);
+          if (isHexPair(hex4)) {
+            output2 += "%" + hex4.toUpperCase();
             i += 2;
             continue;
           }
@@ -3501,9 +3501,9 @@ var require_utils = __commonJS({
       for (let i = 0; i < input2.length; i++) {
         const ch = input2[i];
         if (ch === "%" && i + 2 < input2.length) {
-          const hex3 = input2.slice(i + 1, i + 3);
-          if (isHexPair(hex3)) {
-            const normalizedHex = hex3.toUpperCase();
+          const hex4 = input2.slice(i + 1, i + 3);
+          if (isHexPair(hex4)) {
+            const normalizedHex = hex4.toUpperCase();
             const decoded = String.fromCharCode(parseInt(normalizedHex, 16));
             if (isUnreserved(decoded)) {
               output2 += decoded;
@@ -3541,9 +3541,9 @@ var require_utils = __commonJS({
       let output2 = "";
       for (let i = 0; i < input2.length; i++) {
         if (input2[i] === "%" && i + 2 < input2.length) {
-          const hex3 = input2.slice(i + 1, i + 3);
-          if (isHexPair(hex3)) {
-            output2 += "%" + hex3.toUpperCase();
+          const hex4 = input2.slice(i + 1, i + 3);
+          if (isHexPair(hex4)) {
+            output2 += "%" + hex4.toUpperCase();
             i += 2;
             continue;
           }
@@ -12122,8 +12122,8 @@ function base64urlToUint8Array(base64url3) {
 function uint8ArrayToBase64url(bytes) {
   return uint8ArrayToBase64(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }
-function hexToUint8Array(hex3) {
-  const cleanHex = hex3.replace(/^0x/, "");
+function hexToUint8Array(hex4) {
+  const cleanHex = hex4.replace(/^0x/, "");
   if (cleanHex.length % 2 !== 0) {
     throw new Error("Invalid hex string length");
   }
@@ -37224,6 +37224,15 @@ var Store = class {
   status() {
     return this.db.prepare("SELECT month,COUNT(*) requests,SUM(cost) reserved_or_spent_micro_usd FROM requests GROUP BY month ORDER BY month DESC LIMIT 12").all();
   }
+  accessEvidence() {
+    const row = this.db.prepare("SELECT COUNT(*) count, MAX(at) lastAt FROM requests WHERE status='completed'").get();
+    return {
+      historicalSuccessfulRequests: row.count,
+      lastSuccessfulRequestAt: row.lastAt,
+      currentKeyVerified: false,
+      scope: "retained_accounting_history_not_current_key_or_effectiveness"
+    };
+  }
   measure({ trialId, workspaceHash, sessionId, mode, metrics, revision = "legacy", origin = "unattributed" }) {
     if (!/^[a-f0-9]{64}$/.test(workspaceHash) || !/^[a-f0-9-]{36}$/.test(sessionId) || !["jev", "cache", "bypass", "local-fallback", "exact-read"].includes(mode) || !(trialId === "qualified" || /^[a-f0-9-]{36}$/.test(trialId)) || !(revision === "legacy" || /^[a-f0-9]{64}$/.test(revision)) || !["ordinary", "synthetic", "comparison", "unattributed"].includes(origin)) throw new SafeError("invalid_metrics", "Invalid measurement identity");
     const names = [
@@ -37364,11 +37373,11 @@ async function discover(root, input2, config2, store) {
     if (error62.code === 1) paths = [];
     else throw new SafeError("scan_failed", "Workspace enumeration exceeded its bound or failed.");
   }
-  const eligible = paths.filter((path) => !excludedPath(path, config2) && (!filters.length || filters.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))));
+  const eligible2 = paths.filter((path) => !excludedPath(path, config2) && (!filters.length || filters.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))));
   const terms = queryTerms(input2.query, input2.requirements);
   const pathScore = (path) => terms.reduce((score, term) => score + Number(path.toLowerCase().includes(term)) * (term.includes("_") ? 8 : 4), 0);
-  eligible.sort((a, b) => pathScore(b) - pathScore(a) || a.localeCompare(b));
-  const bounded = eligible.slice(0, 5e3);
+  eligible2.sort((a, b) => pathScore(b) - pathScore(a) || a.localeCompare(b));
+  const bounded = eligible2.slice(0, 5e3);
   const ignored2 = await ignoredMany(root, bounded);
   const allowed = bounded.filter((path) => !ignored2.has(path));
   const identity2 = hash2(JSON.stringify({
@@ -37397,7 +37406,7 @@ async function discover(root, input2, config2, store) {
     files,
     identity: identity2,
     metadataHits,
-    truncated: eligible.length > bounded.length,
+    truncated: eligible2.length > bounded.length,
     skipped: paths.length - files.length,
     filters,
     workspaceHash: hash2(root)
@@ -38332,8 +38341,61 @@ async function measuredOperation(service2, name, input2, operation) {
   return envelope();
 }
 
+// src/release-info.mjs
+import { lstat as lstat5, readFile as readFile2 } from "node:fs/promises";
+import { basename as basename3, dirname as dirname6, join as join7 } from "node:path";
+import { fileURLToPath as fileURLToPath3 } from "node:url";
+import { createHash as createHash3 } from "node:crypto";
+var hash3 = (data) => createHash3("sha256").update(data).digest("hex");
+var hex3 = /^[a-f0-9]{64}$/;
+var eligible = (name) => /^(?:package\.json|LICENSE|NOTICE\.md|THIRD_PARTY_NOTICES\.txt|runtime\/(?!test_)[A-Za-z0-9_-]+\.(?:py|sql)|(?:src|scripts)\/[A-Za-z0-9_-]+\.mjs|dist\/[A-Za-z0-9_.-]+\.(?:mjs|LEGAL\.txt)|dist\/dependency-lock\.json)$/.test(name);
+async function releaseInfo(url2, expected = process.env.JEV_RELEASE_ID) {
+  const root = dirname6(dirname6(fileURLToPath3(url2)));
+  if (!expected && !hex3.test(basename3(root))) return { state: "unsealed_checkout", verified: false };
+  if (expected && !hex3.test(expected)) throw new Error("invalid_release_identity");
+  for (let path = root; ; path = dirname6(path)) {
+    const info = await lstat5(path);
+    if (!info.isDirectory() || info.isSymbolicLink()) throw new Error("unsafe_release_path");
+    if (path === dirname6(path)) break;
+  }
+  const read = async (name, maxBytes) => {
+    const path = join7(root, name), parent = await lstat5(dirname6(path)), info = await lstat5(path);
+    if (!parent.isDirectory() || parent.isSymbolicLink() || !info.isFile() || info.isSymbolicLink() || info.nlink !== 1 || info.size > maxBytes || info.mode & 146) throw new Error("unsafe_release_component");
+    const bytes = await readFile2(path), after = await lstat5(path);
+    if (info.ino !== after.ino || info.dev !== after.dev || info.ctimeMs !== after.ctimeMs || info.size !== bytes.length)
+      throw new Error("release_changed_during_read");
+    return bytes;
+  };
+  const raw = await read("release-manifest.json", 256 * 1024), id = hash3(raw), manifest = JSON.parse(raw);
+  if (id !== basename3(root) || expected && expected !== id || manifest.schema !== 1 || !manifest.files || typeof manifest.files !== "object" || Array.isArray(manifest.files) || Object.keys(manifest.files).length > 512) throw new Error("release_manifest_mismatch");
+  for (const name of ["dist/server.mjs", "runtime/manage.py", "runtime/invocations.sql", "src/hardened-policy.mjs", "dist/dependency-lock.json"])
+    if (!manifest.files[name]) throw new Error("release_component_missing");
+  let total = 0;
+  for (const [name, record2] of Object.entries(manifest.files)) {
+    if (!eligible(name) || !record2 || !hex3.test(record2.sha256) || !Number.isSafeInteger(record2.bytes) || record2.bytes < 0 || record2.bytes > 8 * 1024 * 1024) throw new Error("invalid_release_component");
+    total += record2.bytes;
+    if (total > 32 * 1024 * 1024) throw new Error("release_too_large");
+    const data = await read(name, record2.bytes);
+    if (data.length !== record2.bytes || hash3(data) !== record2.sha256) throw new Error("release_hash_mismatch");
+  }
+  return {
+    state: "immutable_release",
+    verified: true,
+    id,
+    version: manifest.version,
+    components: {
+      bundle: manifest.files["dist/server.mjs"].sha256,
+      python: manifest.files["runtime/manage.py"].sha256,
+      policy: manifest.files["src/hardened-policy.mjs"].sha256,
+      schema: manifest.files["runtime/invocations.sql"].sha256,
+      dependencies: manifest.files["dist/dependency-lock.json"].sha256
+    }
+  };
+}
+
 // src/mcp-server.mjs
 process.umask(63);
+var loadedRelease = await releaseInfo(import.meta.url);
 var service = await new EvidenceService({
   forceLocal: process.env.JEV_FORCE_LOCAL === "1",
   measurementOrigin: process.env.JEV_MEASUREMENT_ORIGIN || "ordinary",
@@ -38403,6 +38465,8 @@ register("evidence_status", "Report selection enablement and conservative local 
     model: config2.model,
     sourcePolicy: POLICY,
     loadedBuild: service.buildHash,
+    loadedRelease,
+    workspaceBinding: service.boundRoot,
     measurementOrigin: service.measurementOrigin,
     selectionMode: service.forceLocal ? "local_only" : selectionMode(config2, service.boundRoot),
     defaultAuthorization: config2.default_authorization,
@@ -38420,6 +38484,7 @@ register("evidence_status", "Report selection enablement and conservative local 
     totalBudgetUsd: config2.total_budget_usd,
     accounting: service.store.status(),
     reservations: service.store.reservations(),
+    accessEvidence: service.store.accessEvidence(),
     hookTrust: "not_inspected_by_mcp",
     telemetryCoverage: service.store.runtimeMeasurements(),
     invocationCoverage,

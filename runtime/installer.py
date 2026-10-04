@@ -61,13 +61,13 @@ def block(label, body, markdown=False):
     return begin + "\n" + body.rstrip() + "\n" + end + "\n"
 
 
-def guidance(home):
-    command = shlex.join([str(Path(sys.executable).resolve()), str(MANAGE)])
+def guidance(home, manage=MANAGE):
+    command = shlex.join([str(Path(sys.executable).resolve()), str(manage)])
     location = shlex.quote(str(home.codex))
     return block(
         "guidance",
         f"""Preserve the owner's selected coding model, reasoning effort and all explicit overrides.
-Do not switch models/providers or delegate to another model. Use the Jev evidence tools by default
+Preserve native worker delegation policies; do not change models, providers or authentication. Use the Jev evidence tools by default
 for broad workspace investigation and large logs; keep precise reads, edits and tests native.
 Check evidence_status and report Jev, cache, bypass or fallback honestly. Recover unscored and
 omitted ranges when needed; verify hashes. Never send secrets or full conversations. Paid selection
@@ -122,8 +122,8 @@ def node_version(node):
         [str(node), "--version"], capture_output=True, timeout=5, check=True
     )
     match = re.fullmatch(rb"v(\d+)\.(\d+)\.(\d+)\s*", result.stdout)
-    if not match or tuple(map(int, match.groups())) < (22, 12, 0):
-        raise ValueError("Node 22.12 or newer is required")
+    if not match or tuple(map(int, match.groups())) < (22, 13, 0):
+        raise ValueError("Node 22.13 or newer is required")
     return node.resolve(), result.stdout.decode().strip()
 
 
@@ -162,14 +162,12 @@ def reconcile_pending(manifest, raw, agents, hooks):
     return value
 
 
-def install(home, node, workspace, entrypoint="source"):
-    if entrypoint not in {"source", "dist"}:
-        raise ValueError("Unknown MCP entrypoint")
+def install(home, node, workspace, entrypoint="dist", preserve_guidance_edits=False):
+    if entrypoint != "dist":
+        raise ValueError("Immutable installation requires the bundled dist entrypoint; run npm run build")
     root = git_root(workspace)
     node, version = node_version(node)
-    server = CHECKOUT / (
-        "src/mcp-server.mjs" if entrypoint == "source" else "dist/server.mjs"
-    )
+    server = CHECKOUT / "dist/server.mjs"
     if not server.is_file():
         raise ValueError("Requested MCP entrypoint is missing")
     home.ensure()
@@ -217,11 +215,27 @@ def install(home, node, workspace, entrypoint="source"):
         }
         if previous.get("status") == "conflicts":
             raise ValueError("Resolve uninstall conflicts before reinstalling")
+        preserved_guidance = None
         for name, record in manifest["blocks"].items():
             target = agents if name == "guidance" else raw
             if not same_owned(target, record):
+                if name == "guidance" and preserve_guidance_edits:
+                    begin, end = "<!-- BEGIN jev-context:guidance -->", "<!-- END jev-context:guidance -->"
+                    if target.count(begin) != 1 or target.count(end) != 1 or target.index(end) < target.index(begin):
+                        raise ValueError("Ambiguous guidance markers; preserved")
+                    preserved_guidance = target[target.index(begin):target.index(end) + len(end)]
+                    if target[target.index(end) + len(end):].startswith("\n"):
+                        preserved_guidance += "\n"
+                    manifest["blocks"][name] = {"text": preserved_guidance, "sha256": sha(preserved_guidance.encode())}
+                    previous["blocks"][name] = copy.deepcopy(manifest["blocks"][name])
+                    continue
                 if previous.get("status") != "pending" or record["text"] in target:
                     raise ValueError("Owner edited a managed block; preserved")
+        from releases import materialize
+
+        release = materialize(home, CHECKOUT)
+        server = Path(release["root"]) / "dist/server.mjs"
+        manage = Path(release["root"]) / "runtime/manage.py"
         expected = copy.deepcopy(config)
         additions = []
         # An absent model is also an owner choice: native defaults remain native.
@@ -234,6 +248,7 @@ def install(home, node, workspace, entrypoint="source"):
                 "JEV_CONTEXT_HOME": str(home.path),
                 "CODEX_HOME": str(home.codex),
                 "JEV_PYTHON": str(Path(sys.executable).resolve()),
+                "JEV_RELEASE_ID": release["id"],
             },
         }
         servers = config.get("mcp_servers", {})
@@ -245,6 +260,7 @@ def install(home, node, workspace, entrypoint="source"):
             f"[mcp_servers.{SERVER}.env]\nJEV_CONTEXT_HOME = {json.dumps(str(home.path))}\n"
             f"CODEX_HOME = {json.dumps(str(home.codex))}\n"
             f"JEV_PYTHON = {json.dumps(str(Path(sys.executable).resolve()))}\n"
+            f"JEV_RELEASE_ID = {json.dumps(release['id'])}\n"
         )
         if SERVER in servers:
             if "mcp" not in manifest["blocks"]:
@@ -277,7 +293,7 @@ def install(home, node, workspace, entrypoint="source"):
         command = shlex.join(
             [
                 str(Path(sys.executable).resolve()),
-                str(MANAGE),
+                str(manage),
                 "hook",
                 "--codex-home",
                 str(home.codex),
@@ -310,7 +326,20 @@ def install(home, node, workspace, entrypoint="source"):
             if group not in groups:
                 groups.append(group)
             manifest["hooks"][event] = {"group": group, "sha256": sha(encoded(group))}
-        content = guidance(home)
+        content = guidance(home, manage)
+        if preserved_guidance is not None or previous.get("preserve_guidance_edits"):
+            content = preserved_guidance or manifest["blocks"]["guidance"]["text"]
+            old_paths = set()
+            for record in previous.get("hooks", {}).values():
+                for handler in record.get("group", {}).get("hooks", []):
+                    args = shlex.split(handler.get("command", ""))
+                    if len(args) >= 3 and args[2] == "hook" and Path(args[1]).name == "manage.py":
+                        old_paths.add(args[1])
+            if len(old_paths) != 1:
+                raise ValueError("Ambiguous prior recovery command; guidance preserved")
+            content = content.replace(next(iter(old_paths)), str(manage))
+            manifest["preserve_guidance_edits"] = True
+            warnings.append("Custom guidance preserved; only the previously owned recovery-helper path was updated.")
         if manifest["blocks"].get("guidance", {}).get("text", "").startswith("\n"):
             content = "\n" + content
         if "guidance" not in manifest["blocks"]:
@@ -358,6 +387,8 @@ def install(home, node, workspace, entrypoint="source"):
             node=str(node),
             node_version=version,
             entrypoint=str(server),
+            release_id=release["id"],
+            release_root=release["root"],
             launch_cwd="inherit_client_workspace",
             updated_at=now(),
         )
@@ -411,6 +442,8 @@ def install(home, node, workspace, entrypoint="source"):
         key_path.chmod(0o600)
     return {
         "installed": True,
+        "release_id": release["id"],
+        "release_root": release["root"],
         "state_home": str(home.path),
         "mcp_server": SERVER,
         "launch_cwd": "inherit_client_workspace",

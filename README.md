@@ -42,8 +42,11 @@ with stdio MCP support. Recovery hooks additionally require a hook-capable
 Codex version. The tested deployment is a Linux execution host, including a
 remote host used from the macOS Codex app. Mac-local execution is unverified.
 
-Run on the host where Codex actually reads your project. Use a permanent install
-directory outside the project; keep it after installation.
+Run on the host where Codex actually reads your project. Keep this checkout for
+updates. The current development installer copies verified runtime artifacts to
+a private content-addressed release; it no longer executes from this checkout.
+The published beta tag below predates that installer change; check the closure
+ledger for release and actual-connection verification before assuming activation.
 
 ```bash
 git clone https://github.com/Hyper-AI-Lab/codex-jev.git

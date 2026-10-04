@@ -18,6 +18,7 @@ from installer import (
     validate_config,
 )
 from test_support import RuntimeCase
+from releases import create_manifest, materialize
 
 ISOLATED_NODE = CHECKOUT / ".toolchain/node-v22.23.3-linux-x64/bin/node"
 NODE = Path(
@@ -32,7 +33,7 @@ NODE = Path(
 
 class InstallerTests(RuntimeCase):
     def install(self):
-        return install(self.home, NODE, self.root, "source")
+        return install(self.home, NODE, self.root)
 
     def test_idempotent_preserves_provider_auth_effort_and_uninstall(self):
         # Deliberately synthetic. Tests never read a real auth file.
@@ -75,7 +76,9 @@ class InstallerTests(RuntimeCase):
         for file in self.home.path.rglob("*"):
             if file.is_file():
                 self.assertNotIn(secret.encode(), file.read_bytes())
-        self.assertIn(str(MANAGE), first["AGENTS.md"].decode())
+        managed = self.read_state("installation.json")
+        self.assertIn(str(Path(managed["release_root"]) / "runtime/manage.py"), first["AGENTS.md"].decode())
+        self.assertNotIn("Do not switch models/providers or delegate", first["AGENTS.md"].decode())
         self.assertIn("--codex-home", first["AGENTS.md"].decode())
         self.assertTrue(uninstall(self.home)["uninstalled"])
         self.assertEqual((self.home.codex / "config.toml").read_text(), native)
@@ -114,13 +117,18 @@ class InstallerTests(RuntimeCase):
         self.install()
         before = {name: (self.home.codex / name).read_bytes()
                   for name in ("config.toml", "hooks.json", "AGENTS.md")}
+        prior = self.read_state("installation.json")
         upgrade = self.base / "new-release"
-        (upgrade / "src").mkdir(parents=True)
-        (upgrade / "src/mcp-server.mjs").write_text("// synthetic installer fixture\n")
+        shutil.copytree(prior["release_root"], upgrade)
+        for path in (upgrade, *upgrade.rglob("*")):
+            path.chmod(0o700 if path.is_dir() else 0o600)
+        manage = upgrade / "runtime/manage.py"
+        manage.write_text(manage.read_text() + "\n# synthetic upgrade marker\n")
+        new_id = create_manifest(upgrade)["id"]
         actual_write = atomic_write
 
         def failing(path, data):
-            if path == self.home.codex / "hooks.json" and b"new-release" in data:
+            if path == self.home.codex / "hooks.json" and new_id.encode() in data:
                 raise OSError("simulated interrupted upgrade")
             return actual_write(path, data)
 
@@ -132,8 +140,8 @@ class InstallerTests(RuntimeCase):
             for name, content in before.items():
                 self.assertEqual((self.home.codex / name).read_bytes(), content)
             self.assertTrue(self.install()["installed"])
-            self.assertIn("new-release", (self.home.codex / "config.toml").read_text())
-            self.assertIn("new-release", (self.home.codex / "hooks.json").read_text())
+            self.assertIn(new_id, (self.home.codex / "config.toml").read_text())
+            self.assertIn(new_id, (self.home.codex / "hooks.json").read_text())
         self.assertTrue(self.install()["installed"])
         for name, content in before.items():
             self.assertEqual((self.home.codex / name).read_bytes(), content)
@@ -209,9 +217,64 @@ class InstallerTests(RuntimeCase):
         self.assertTrue(uninstall(self.home)["uninstalled"])
         self.assertEqual((self.home.codex / "config.toml").read_text(), 'model_reasoning_effort="high"\n')
 
+    def test_doctor_reports_owned_edits_without_mutating_or_manufacturing_trust(self):
+        from doctor import inspect
+
+        self.install()
+        report = inspect(self.home)
+        self.assertTrue(report["release"]["verified"])
+        self.assertTrue(all(report["ownedHooksMatch"].values()))
+        self.assertEqual(report["hookTrust"], "not_inspected_or_modified")
+        file = self.home.codex / "AGENTS.md"
+        file.write_text(file.read_text().replace("Check evidence_status", "Owner changed this block"))
+        before = file.read_bytes()
+        self.assertFalse(inspect(self.home)["ownedFragmentsMatch"]["guidance"])
+        self.assertEqual(file.read_bytes(), before)
+
+    def test_explicit_guidance_preservation_keeps_native_worker_policy(self):
+        self.install()
+        path = self.home.codex / "AGENTS.md"
+        original = path.read_text()
+        custom = original.replace("Do not switch", "Keep owner choices; do not switch")
+        custom = custom.replace("Check evidence_status", "Owner permits native workers. Check evidence_status")
+        path.write_text(custom)
+        with self.assertRaises(ValueError):
+            self.install()
+        install(self.home, NODE, self.root, preserve_guidance_edits=True)
+        self.assertEqual(path.read_text(), custom)
+        self.install()
+        self.assertEqual(path.read_text(), custom)
+
+    def test_interrupted_custom_guidance_upgrade_recovers_without_duplicate_blocks(self):
+        self.install()
+        agents = self.home.codex / "AGENTS.md"
+        custom = agents.read_text().replace("Check evidence_status", "Use owner workers. Check evidence_status")
+        agents.write_text(custom)
+        prior = self.read_state("installation.json")
+        upgrade = self.base / "upgrade"
+        shutil.copytree(prior["release_root"], upgrade)
+        for path in (upgrade, *upgrade.rglob("*")):
+            path.chmod(0o700 if path.is_dir() else 0o600)
+        file = upgrade / "runtime/manage.py"
+        file.write_text(file.read_text() + "\n# new fixture\n")
+        create_manifest(upgrade)
+        def failing(path, data):
+            if path == agents:
+                raise OSError("interrupted guidance update")
+            atomic_write(path, data)
+        with patch("installer.CHECKOUT", upgrade):
+            with patch("common.atomic_write", side_effect=failing), self.assertRaises(OSError):
+                install(self.home, NODE, self.root, preserve_guidance_edits=True)
+            self.assertEqual(agents.read_text(), custom)
+            result = install(self.home, NODE, self.root, preserve_guidance_edits=True)
+            self.assertEqual(agents.read_text().count("BEGIN jev-context:guidance"), 1)
+            self.assertIn("Use owner workers", agents.read_text())
+            self.assertIn(result["release_root"], agents.read_text())
+
     def test_matching_unowned_hook_is_not_adopted_or_removed(self):
+        managed = Path(materialize(self.home, CHECKOUT)["root"]) / "runtime/manage.py"
         group = {"hooks": [{"type": "command", "command": shlex.join([
-            str(Path(sys.executable).resolve()), str(MANAGE), "hook", "--codex-home", str(self.home.codex)
+            str(Path(sys.executable).resolve()), str(managed), "hook", "--codex-home", str(self.home.codex)
         ]), "timeout": 30, "additionalContextLimit": 400}]}
         hooks = self.native("hooks.json", json.dumps({"hooks": {"SessionStart": [group]}}))
         before = hooks.read_bytes()

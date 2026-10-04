@@ -22,7 +22,7 @@ def report(home, task):
             db.row_factory = sqlite3.Row
             rows = db.execute("SELECT * FROM events WHERE session_hash=? AND at>=? ORDER BY at LIMIT ?",
                               (sha(task.encode()), time.time() - RETENTION_DAYS * 86400, MAX_RECORDS)).fetchall()
-    groups = {}
+    groups, timeline = {}, []
     for row in rows:
         if row["kind"] not in KINDS:
             continue
@@ -30,13 +30,18 @@ def report(home, task):
         group = groups.setdefault(key, {"kind": key[0], "revision": key[1], "origin": key[2],
                                        "observations": 0, "metrics": {}, "coverage": {}})
         group["observations"] += 1
+        numeric = {}
         for name, value in json.loads(row["metrics"]).items():
             if name not in FIELDS or type(value) not in (int, float) or not math.isfinite(value) or not 0 <= value <= 1e15:
                 continue
             group["metrics"][name] = group["metrics"].get(name, 0) + value
             group["coverage"][name] = group["coverage"].get(name, 0) + 1
+            numeric[name] = value
+        timeline.append({"at": row["at"], "kind": row["kind"], "revision": row["revision"],
+                         "origin": row["origin"], "metrics": numeric})
     return {"taskHash": sha(task.encode()), "nativeTokensMeasured": any(k[0] == "native_usage" for k in groups),
             "accountSavingsMeasured": False, "runtime": list(groups.values()), "retrieval": usage_report(home, task),
+            "timeline": timeline[-200:], "timelineOmittedRecords": max(0, len(timeline) - 200),
             "scope": {"retentionDays": RETENTION_DAYS, "maxDetailRecords": MAX_RECORDS,
                       "retainedTaskRecords": len(rows), "wholeTaskCoverageVerified": False},
             "notes": ["No observations means unknown, not zero usage.",

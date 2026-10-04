@@ -66,7 +66,7 @@ checked separately. No finding is promoted to a defect without source verificati
 | 6. Workspace and follow-up usability | Implementation verified | 11 CLI/entrypoint/package tests; actual separate CLI processes; declared identity distinguished from native receipts |
 | 7. Evidence selection | Implementation verified | 227 Node tests; default-preview/source-diversity regressions and frozen offline retention fixtures; rollout pending |
 | 8. Overhead and recovery | Implementation verified | 133 Python / 229 Node tests; exact acknowledged resume, covered worker quota halt, numeric task reports; offline read-hook median 864 to 201 ms, not whole-session savings |
-| 9. Immutable rollout | Next | Installed private bundle retained; prepare content-addressed release and ownership-preserving upgrade |
+| 9. Immutable rollout | Source verified; live verification pending | 232 Node / 140 Python full suites, plus 9 observer and 5 release checks; sealed package startup, interrupted upgrades, custom-guidance preservation and rollback verified offline |
 | 10. Ordinary-work observation and closure | Pending | No savings claim |
 
 ## Research and Limits

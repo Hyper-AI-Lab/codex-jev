@@ -6,7 +6,7 @@ rollback evidence, not an alternate development target.
 | Surface | Implementation | Protection / regression evidence |
 | --- | --- | --- |
 | MCP stdio | `src/mcp-server.mjs` -> `EvidenceService` | MCP, protected entrypoint, policy/store tests |
-| Search CLI | `scripts/investigate.mjs` -> `EvidenceService` | Protected entrypoint tests; follow-up persistence pending step 6 |
+| Search/list/read CLI | `scripts/investigate.mjs` -> `EvidenceService` | Task-bound process continuity, source hashes and protected entrypoint tests |
 | Live validation | `scripts/validate-hardened.mjs` | Shared service/caps; no automatic retry |
 | Evaluation preflight | `scripts/evaluation-preflight.mjs` | Explicit manifest, shared service/caps, fixture scope |
 | Native comparison | `scripts/hardening-comparison.mjs` | Explicit authorization, run cap, quota stop; not restarted |
@@ -14,9 +14,9 @@ rollback evidence, not an alternate development target.
 | Installer / recovery | `runtime/manage.py`, `installer.py`, `recovery.py` | Offline Python and isolated package lifecycle tests |
 | Numeric collector | `runtime/telemetry.py`, `measurements.py` | Telemetry/measurement tests; stable-response regression added before fix |
 
-The source and dist surfaces share the same service. The baseline installer API
-and CLI choose different entrypoint defaults, and both still execute mutable
-checkout paths. Step 9 will resolve both as one immutable-release change, with
-dedicated installer regressions before the fix. Preview-first changes belong to
-step 7; persistent CLI receipts belong to step 6. Do not hide incomplete steps
-with skipped tests or claims that existing baseline suites cover new behavior.
+Source and dist share the service. Installer API and CLI now default to the
+bundled `dist` entrypoint; mutable source installation is rejected. The manifest
+covers Node/Python code, the bundled dependencies, policy, schema and dependency
+lock. Runtime files are copied into a private content-addressed directory and
+made read-only. See `IMMUTABLE_RELEASES.md`; implementation and actual desktop
+activation remain separate items in the closure ledger.

@@ -27,4 +27,6 @@ class TaskReportTests(RuntimeCase):
         self.assertTrue(value["nativeTokensMeasured"])
         self.assertFalse(value["accountSavingsMeasured"])
         self.assertEqual(value["scope"]["retainedTaskRecords"], 4)
+        self.assertEqual(len(value["timeline"]), 4)
+        self.assertEqual(value["timelineOmittedRecords"], 0)
         self.assertNotIn("other", markdown(value))

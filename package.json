@@ -11,7 +11,7 @@
   "keywords": ["codex", "mcp", "jev", "typesafe", "context-engineering", "reranking", "developer-tools"],
   "bin": { "codex-jev": "./scripts/investigate.mjs" },
   "files": [
-    "dist/*.mjs", "dist/*.LEGAL.txt", "src/*.mjs", "scripts/*.mjs",
+    "dist/*.mjs", "dist/*.LEGAL.txt", "dist/dependency-lock.json", "release-manifest.json", "src/*.mjs", "scripts/*.mjs",
     "runtime/*.py", "runtime/*.sql", "benchmarks/*.mjs", "benchmarks/README.md", "benchmarks/fixtures", "benchmarks/evaluation-v2.manifest.json", "tests/*.mjs", "docs/*.md", "docs/assets/*.svg",
     "README.md", "LICENSE", "NOTICE.md", "THIRD_PARTY_NOTICES.txt", "SECURITY.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "CHANGELOG.md", "eslint.config.mjs", ".mcp.json"
   ],
@@ -20,6 +20,7 @@
     "test": "node --test",
     "lint": "eslint src scripts tests",
     "check:public": "node scripts/check-publication.mjs",
+    "postbuild": "python3 runtime/releases.py build",
     "check": "npm run build && npm run lint && npm run check:public && npm test",
     "licenses": "node scripts/third-party-notices.mjs",
     "status": "node scripts/retrieval-trial.mjs report"
