@@ -66,8 +66,36 @@ checked separately. No finding is promoted to a defect without source verificati
 | 6. Workspace and follow-up usability | Implementation verified | 11 CLI/entrypoint/package tests; actual separate CLI processes; declared identity distinguished from native receipts |
 | 7. Evidence selection | Implementation verified | 227 Node tests; default-preview/source-diversity regressions and frozen offline retention fixtures; rollout pending |
 | 8. Overhead and recovery | Implementation verified | 133 Python / 229 Node tests; exact acknowledged resume, covered worker quota halt, numeric task reports; offline read-hook median 864 to 201 ms, not whole-session savings |
-| 9. Immutable rollout | Source verified; live verification pending | 232 Node / 140 Python full suites, plus 9 observer and 5 release checks; sealed package startup, interrupted upgrades, custom-guidance preservation and rollback verified offline |
+| 9. Immutable rollout | Installed; actual desktop reconnection verification pending | 232 Node / 145 Python tests; sealed package startup, interrupted upgrades, preservation and rollback verified; 55 deployed components verified; immutable collector active; installed CLI follow-ups and cross-workspace denial pass |
 | 10. Ordinary-work observation and closure | Pending | No savings claim |
+
+## Rollout Checkpoint: 2026-10-04
+
+Installed release `a2ae3e5371061fc38d189e0ff551ab788929c5f157f7b377f10d876cd282ea45`
+from source checkpoint `7b2dfa7`. The loopback collector runs from the same
+immutable release. Native configuration, customized worker guidance (apart from
+the helper path), and protected Jev settings match their pre-upgrade hashes.
+The authorized no-daily-count-cap policy and overlapping USD 10 ceilings remain.
+
+The native config writer had inserted its hook-trust table inside the collector's
+comment markers. Earlier upgrades correctly refused ownership ambiguity. The
+regression-tested repair moves only the comment boundary after proving complete
+TOML equivalence; upgrade and uninstall never adopt or remove native trust data.
+No trust records were manufactured, no credentials copied, and no application
+service was restarted. Previous releases and the older checkout remain available.
+
+Installed CLI search, reference listing, exact hash-checked reads, and denial of
+cross-workspace reference reuse pass. These were local-only rollout checks, not
+ordinary-work efficiency samples; no provider request was made. CLI identity
+remains explicitly declared rather than native-receipt-verified.
+
+The actual desktop MCP connection still reports the older `b5175de1...` build.
+Reconnect and verify its `loadedRelease.id` before claiming the new MCP is active.
+Updated hooks may require native review; callback observations are not proof of
+trust. Current OTLP completion candidates omit turn IDs, so they are not assigned
+to turns. Seven historical manually collected native responses are insufficient
+to establish automatic coverage or savings; the history fallback still requires
+real connected-client verification. Step 10 has not started.
 
 ## Research and Limits
 
