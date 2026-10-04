@@ -66,7 +66,7 @@ checked separately. No finding is promoted to a defect without source verificati
 | 6. Workspace and follow-up usability | Implementation verified | 11 CLI/entrypoint/package tests; actual separate CLI processes; declared identity distinguished from native receipts |
 | 7. Evidence selection | Implementation verified | 227 Node tests; default-preview/source-diversity regressions and frozen offline retention fixtures; rollout pending |
 | 8. Overhead and recovery | Implementation verified | 133 Python / 229 Node tests; exact acknowledged resume, covered worker quota halt, numeric task reports; offline read-hook median 864 to 201 ms, not whole-session savings |
-| 9. Immutable rollout | Installed; actual desktop reconnection verification pending | 232 Node / 145 Python tests; sealed package startup, interrupted upgrades, preservation and rollback verified; 55 deployed components verified; immutable collector active; installed CLI follow-ups and cross-workspace denial pass |
+| 9. Immutable rollout | Desktop release and live retrieval verified; renewed hook trust/attribution pending | 232 Node / 145 Python tests; 55 deployed components verified; actual desktop paid selection/cache/exact read/pagination/workspace denial pass; automatic task attribution still unverified |
 | 10. Ordinary-work observation and closure | Pending | No savings claim |
 
 ## Rollout Checkpoint: 2026-10-04
@@ -96,6 +96,31 @@ trust. Current OTLP completion candidates omit turn IDs, so they are not assigne
 to turns. Seven historical manually collected native responses are insufficient
 to establish automatic coverage or savings; the history fallback still requires
 real connected-client verification. Step 10 has not started.
+
+## Reconnection Acceptance: 2026-10-04
+
+The owner reconnected SSH. Actual desktop `evidence_status` now verifies release
+`a2ae3e5371061fc38d189e0ff551ab788929c5f157f7b377f10d876cd282ea45`
+and its component hashes in the intended workspace. One bounded live selection
+returned `jev`, with 13,027 provider input tokens and 330 output tokens. The local
+ledger added 548 micro-USD conservatively; this is not an invoiced charge. The
+identical request returned `cache` with zero additional provider calls. Measured
+retrieval was 1,380 ms then 493 ms; this single pair is not a speed benchmark.
+
+Exact follow-up reads checked source hashes. Pagination exposed retained and
+unscored references, and a request for another workspace was denied before
+selection. Scan/request limits were explicitly reported. Tests used the existing
+authorized budget and did not restart native inference comparisons. Treat these
+as rollout acceptance, not ordinary-work efficiency samples, even though the
+connection records the default ordinary origin.
+
+No new native hook callbacks appeared after reconnection; the last callback was
+at 03:29 UTC, before this 04:55 UTC acceptance. Existing trust records predate the
+changed command definitions. Native hook review is still required to validate
+callbacks, exact task/turn receipts and automatic history collection. The live
+collector receives OTLP data, but completion candidates omit turn IDs; they are
+not assigned speculatively. Zero verified retrieval receipts is missing coverage,
+not zero usage. No trust state was modified or bypassed. Step 10 remains pending.
 
 ## Research and Limits
 
