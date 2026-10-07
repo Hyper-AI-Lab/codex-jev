@@ -63,7 +63,12 @@ test('settlement failure after send leaves a charge barrier rather than allowing
   } }).init();
   t.after(() => service.close());
   const candidates = Array.from({ length: 6 }, (_, i) => ({ path: `${i}.js`, hash: hash(`${i}`), lines: { start: 1, end: 12 }, excerpt: 'checkout '.repeat(200) }));
-  await assert.rejects(service.select(f.root, 'checkout', [], candidates));
+  await assert.rejects(service.select(f.root, 'checkout', [], candidates), error => {
+    assert.equal(error.code, 'accounting_unavailable');
+    assert.equal(error.jevRequests, 1);
+    assert.doesNotMatch(error.message, /synthetic disk full/);
+    return true;
+  });
   assert.equal(calls, 1); assert.equal(service.store.reservations().blocked, true);
   assert.equal(service.store.status()[0].reserved_or_spent_micro_usd, RESERVATION_MICRO_USD);
   assert.throws(() => service.store.reserve(f.config), { code: 'busy' });

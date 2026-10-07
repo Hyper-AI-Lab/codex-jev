@@ -63,9 +63,19 @@ workspace. The ownership journal updates only unchanged owned fragments and
 rejects owner-edit conflicts. Reload Codex; inspect any changed hook definitions
 in the native trust UI before authorizing them.
 
-To roll back, run the previous checkout's installer with the same arguments.
+To roll back between skill-aware releases, run the previous checkout's installer
+with the same arguments. For a release predating skill ownership, first use the
+current installer to uninstall its owned integration and skill files, then run
+the previous installer. Stop on owner-edit conflicts; never delete those files
+manually or copy an old ownership journal over them.
 Reload and verify `evidence_status`. This restores owned paths/configuration,
 not accounting, keys, halts or recovery history. Do not reset the ledger.
+
+The bounded history reader upgrades its cursor registry to version 2. Older
+readers reject that registry. A code rollback therefore leaves history collection
+unavailable until compatible code is restored; it must not rewind cursors or
+reimport usage to manufacture compatibility. Keep the original evidence and
+report that coverage gap. Existing read-only recovery history remains intact.
 
 ## Uninstall
 

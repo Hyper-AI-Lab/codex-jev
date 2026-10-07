@@ -10,6 +10,7 @@ import stat
 import tempfile
 
 from common import atomic_write, encoded, locked, no_symlinks, private_directory, read_bytes, sha
+from skill_files import FILES as SKILL_FILES, PREFIX as SKILL_PREFIX
 
 MANIFEST = "release-manifest.json"
 MAX_FILE = 8 * 1024 * 1024
@@ -21,7 +22,7 @@ REQUIRED = TOP | {"dist/server.mjs", "dist/live-smoke.mjs", "dist/dependency-loc
 
 
 def eligible(name):
-    return name in TOP or bool(re.fullmatch(
+    return name in TOP or name in {SKILL_PREFIX + file for file in SKILL_FILES} or bool(re.fullmatch(
         r"(?:runtime/(?!test_)[A-Za-z0-9_-]+\.(?:py|sql)|(?:src|scripts)/[A-Za-z0-9_-]+\.mjs|"
         r"dist/[A-Za-z0-9_.-]+\.(?:mjs|LEGAL\.txt)|dist/dependency-lock\.json)", name))
 
@@ -49,6 +50,7 @@ def create_manifest(root):
         atomic_write(root / "dist/dependency-lock.json", data)
     paths = sorted(p.relative_to(root).as_posix() for folder in ("runtime", "src", "scripts", "dist")
                    for p in (root / folder).iterdir() if eligible(p.relative_to(root).as_posix()))
+    paths += [SKILL_PREFIX + file for file in SKILL_FILES if (root / SKILL_PREFIX / file).exists()]
     files, total = {}, 0
     for name in sorted(set(paths) | TOP):
         data = component(root, name)

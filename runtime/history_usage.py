@@ -22,13 +22,14 @@ from measurements import bind_session, record
 MAX_LINE = 1024 * 1024
 MAX_BATCH = 8 * 1024 * 1024
 MAX_HISTORIES = 128
+DISCARD_CHUNK = 64 * 1024
 KEYS = ("input_tokens", "cached_input_tokens", "output_tokens", "reasoning_tokens")
 
 
 def schema(version):
-    if not isinstance(version, str) or not re.fullmatch(r"0\.(130|156|157)\.\d+", version):
+    if not isinstance(version, str) or not re.fullmatch(r"0\.(130|156|157)\.\d+|0\.160\.0", version):
         raise ValueError("Unsupported Codex history version; compatibility review required")
-    return "response_records" if version.split(".")[1] == "157" else "cumulative"
+    return "response_records" if version.split(".")[1] in {"157", "160"} else "cumulative"
 
 
 def location(home, path):
@@ -63,15 +64,16 @@ def open_history(path):
 def registry(home):
     value = read_json(home.path / "usage-histories.json")
     if not value:
-        return {"version": 1, "histories": {}}
-    if (set(value) != {"version", "histories"} or value.get("version") != 1
+        return {"version": 2, "histories": {}}
+    if (set(value) != {"version", "histories"} or type(value.get("version")) is not int or value["version"] not in {1, 2}
             or not isinstance(value.get("histories"), dict) or len(value["histories"]) > MAX_HISTORIES):
         raise ValueError("Invalid usage registry; preserve and reconcile")
+    extra = {"skipped_records", "skipped_bytes", "discarding_oversized"} if value["version"] == 2 else set()
     for key, item in value["histories"].items():
         if (not isinstance(key, str) or not re.fullmatch("[a-f0-9]{64}", key)
                 or not isinstance(item, dict) or not identifier(item.get("session"))
                 or set(item) != {"session", "path", "root", "client_version", "format", "offset", "device",
-                                 "inode", "invalid_records", "counter_resets", "header", "anchor", "counters"}
+                                 "inode", "invalid_records", "counter_resets", "header", "anchor", "counters"} | extra
                 or not isinstance(item.get("path"), str) or not 1 <= len(item["path"]) <= 4096
                 or not isinstance(item.get("root"), str) or not 1 <= len(item["root"]) <= 4096
                 or item.get("format") not in {"response_records", "cumulative"}
@@ -82,10 +84,18 @@ def registry(home):
             raise ValueError("Invalid usage cursor; preserve and reconcile")
         if schema(item.get("client_version")) != item["format"]:
             raise ValueError("History version/schema mismatch")
+        if value["version"] == 1:
+            item.update(skipped_records=0, skipped_bytes=0, discarding_oversized=False)
+        if (type(item.get("discarding_oversized")) is not bool
+                or any(type(item.get(k)) is not int or item[k] < 0 for k in ("skipped_records", "skipped_bytes"))
+                or (item["discarding_oversized"] and not item["skipped_records"])
+                or item["skipped_bytes"] > item["offset"]):
+            raise ValueError("Invalid oversized history cursor; preserve and reconcile")
         if item.get("counters") is not None:
             validated = counters(item["counters"])
             if validated != item["counters"]:
                 raise ValueError("Invalid usage baseline")
+    value["version"] = 2  # Persist only after a successfully validated collection.
     return value
 
 
@@ -149,7 +159,8 @@ def register_history(home, path, session, *, client_version):
             state["histories"][key] = dict(path=relative, session=session, root=root,
                 client_version=client_version, format=format_name, offset=offset,
                 device=info.st_dev, inode=info.st_ino, header=header_hash, anchor=anchor(stream, offset),
-                counters=None, invalid_records=0, counter_resets=0)
+                counters=None, invalid_records=0, counter_resets=0,
+                skipped_records=0, skipped_bytes=0, discarding_oversized=False)
         bind_session(home, session, root)
         store_registry(home, state)
     return {"state": "registered", "history": key, "format": format_name,
@@ -239,14 +250,30 @@ def collect_history(home, path, session):
             stream.seek(cursor["offset"])
             while scanned < MAX_BATCH:
                 start = stream.tell()
-                raw = stream.readline(MAX_LINE + 1)
+                remaining = MAX_BATCH - scanned
+                limit = min(DISCARD_CHUNK if cursor["discarding_oversized"] else MAX_LINE + 1, remaining)
+                raw = stream.readline(limit)
                 if not raw:
+                    if cursor["discarding_oversized"]:
+                        result = "partial_oversized_record"
                     break
+                if cursor["discarding_oversized"]:
+                    scanned += len(raw)
+                    cursor["skipped_bytes"] += len(raw)
+                    cursor["offset"] = stream.tell()
+                    cursor["discarding_oversized"] = not raw.endswith(b"\n")
+                    continue
                 if len(raw) > MAX_LINE:
-                    result = "oversized_record"
-                    break
+                    # Preserve a numeric gap and resume streaming discard after
+                    # a crash, without ever storing oversized record contents.
+                    scanned += len(raw)
+                    cursor["skipped_records"] += 1
+                    cursor["skipped_bytes"] += len(raw)
+                    cursor["discarding_oversized"] = not raw.endswith(b"\n")
+                    cursor["offset"] = stream.tell()
+                    continue
                 if not raw.endswith(b"\n"):
-                    result = "partial_record"
+                    result = "scan_limit" if len(raw) == remaining else "partial_record"
                     break
                 scanned += len(raw)
                 try:
@@ -262,11 +289,13 @@ def collect_history(home, path, session):
             if scanned >= MAX_BATCH:
                 result = "scan_limit"
             cursor["anchor"] = anchor(stream, cursor["offset"])
-        if cursor["invalid_records"] and result == "caught_up":
+        if (cursor["invalid_records"] or cursor["skipped_records"]) and result == "caught_up":
             result = "incomplete"
         store_registry(home, state)
         return {"state": result, "history": key, "recorded": recorded, "scanned_bytes": scanned,
                 "invalid_records": cursor["invalid_records"], "counter_resets": cursor["counter_resets"],
+                "skipped_records": cursor["skipped_records"], "skipped_bytes": cursor["skipped_bytes"],
+                "discarding_oversized": cursor["discarding_oversized"],
                 "format": cursor["format"], "coverage": "Registered interval only; resets establish a new baseline."}
 
 
@@ -299,3 +328,23 @@ def observe_hook(home, payload):
     except (OSError, ValueError, TimeoutError, subprocess.SubprocessError):
         # No exception strings, payloads, paths, or source text enter diagnostics.
         return {"state": "history_unavailable_or_requires_reconciliation"}
+
+
+def coverage(home, session):
+    """Metadata-only coverage; a registered cursor does not prove fresh delivery."""
+    if not identifier(session):
+        raise ValueError("Task identity required")
+    try:
+        items = [x for x in registry(home)["histories"].values() if x["session"] == session]
+    except (OSError, ValueError):
+        return {"state": "unavailable", "wholeTaskCoverageVerified": False}
+    discarding = any(x["discarding_oversized"] for x in items)
+    skipped = sum(x["skipped_records"] for x in items)
+    invalid = sum(x["invalid_records"] for x in items)
+    return {"state": "unregistered" if not items else "discard_in_progress" if discarding
+            else "gaps_observed" if skipped or invalid else "registered",
+            "segments": len(items), "skippedRecords": skipped,
+            "skippedBytes": sum(x["skipped_bytes"] for x in items),
+            "invalidRecords": invalid, "counterResets": sum(x["counter_resets"] for x in items),
+            "clientVersions": sorted({x["client_version"] for x in items}),
+            "wholeTaskCoverageVerified": False}

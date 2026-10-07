@@ -172,7 +172,7 @@ export class Store {
   }
   measure({ trialId, workspaceHash, sessionId, mode, metrics, revision = 'legacy', origin = 'unattributed' }) {
     if (!/^[a-f0-9]{64}$/.test(workspaceHash) || !/^[a-f0-9-]{36}$/.test(sessionId) ||
-        !['jev', 'cache', 'bypass', 'local-fallback', 'exact-read'].includes(mode) ||
+        !['jev', 'cache', 'bypass', 'local-fallback', 'exact-read', 'judgment-jev', 'judgment-cache', 'judgment-unavailable', 'judgment-error'].includes(mode) ||
         !(trialId === 'qualified' || /^[a-f0-9-]{36}$/.test(trialId)) ||
         !(revision === 'legacy' || /^[a-f0-9]{64}$/.test(revision)) ||
         !['ordinary', 'synthetic', 'comparison', 'unattributed'].includes(origin)) throw new SafeError('invalid_metrics', 'Invalid measurement identity');

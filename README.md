@@ -91,6 +91,13 @@ Jev service is separately billed**.
 | `list_evidence` | Paginate candidate references, including omissions and unscored ranges |
 | `read_selected_evidence` | Read exact bounded ranges after hash and access revalidation |
 | `evidence_status` | Loaded build, selection mode, budget, reservations and measurement coverage |
+| `judge_evidence` | Advisory classification, checks and scores from exact local evidence; never action authorization |
+
+The development installer also owns one global `codex-jev` skill. It guides
+broad retrieval and useful semantic batches without mandatory paid hook calls.
+Owner-edited or pre-existing skill files are preserved, not silently adopted.
+See [judgment contracts](docs/JUDGMENTS.md) and the current
+[selective-adoption ledger](docs/SELECTIVE_ADOPTION.md) for rollout status.
 
 Selection currently bounds each request to 20 candidates, eight returned blocks
 and 48 KiB outbound. Critical overflow is recoverable through pagination and exact

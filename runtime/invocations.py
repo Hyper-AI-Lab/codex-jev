@@ -13,7 +13,7 @@ from pathlib import Path
 
 from common import identifier, no_symlinks, sha
 
-OPERATIONS = {"search_workspace_evidence", "read_large_text_evidence", "read_selected_evidence", "list_evidence", "evidence_status"}
+OPERATIONS = {"search_workspace_evidence", "read_large_text_evidence", "read_selected_evidence", "list_evidence", "evidence_status", "judge_evidence"}
 METRICS = {"responseBytes", "durationMs", "jevRequests", "jevInputTokens", "jevOutputTokens", "retrievalMs",
            "selectionMs", "evidenceBytes", "followupBytes", "followupReads", "cacheHits", "localBypasses", "localFallbacks"}
 TTL = 600_000

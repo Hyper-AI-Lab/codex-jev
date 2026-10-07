@@ -3,6 +3,12 @@
 Initial public release: `0.4.0-beta.1`. This is a tested beta, not a claim of
 universal production certification or guaranteed savings.
 
+Current development rollout (2026-10-07): 252 Node and 164 Python tests pass.
+The protected judgment tool and global skill are installed; live protocol
+acceptance passes. Actual desktop MCP reload/new hooks and two ordinary-work
+observations remain open. See [current rollout evidence](SELECTIVE_ADOPTION_RESULTS.md)
+for the distinction between installed, connected, trusted and effective.
+
 The curated Linux export passed 204 Node tests and 71 Python tests, plus
 ESLint, scoped Ruff, compile checks and a Gitleaks directory scan. Packaging
 assertions include synthetic fixtures and attribution, not just runtime modules.
@@ -20,7 +26,7 @@ the offline suite does not require Codex or its credentials to be installed.
 | Mac-local / Windows | Mac-local unverified; Windows unsupported |
 | Jev access | Prior live requests succeeded on the private deployment; public users supply their own key/caps |
 | Native hooks | Generated and tested; each user grants native trust independently |
-| Native ordinary-work token telemetry | Not observed on the evaluated client; coverage reported as missing |
+| Native ordinary-work token telemetry | Numeric history fallback now observed; 322 retained observations and six explicit gaps; no complete-task savings attribution |
 | Net cost, token and speed improvement | Not established; no generalized percentage claim |
 
 ## What the interrupted comparison does and does not show

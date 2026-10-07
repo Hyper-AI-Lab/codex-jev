@@ -21,3 +21,10 @@ from the locked installed dependency tree.
 
 Not affiliated with, endorsed by, or an official product of OpenAI or TypeSafe.
 Codex and Jev are used descriptively; their names belong to their respective owners.
+
+Typed question patterns and the packaged skill adapt MIT-licensed guidance from
+TypeSafe AI's `typesafe-ai/skills` at `65a39f393687675ce170e6094757de20370365b9`
+and Francois Chastel's `jev-code` at `c73c5762a7ea0e97c6cb2de0a973fbad22aeda93`.
+Their copyright and permission notices are retained in
+`skills/codex-jev/references/LICENSES.txt`. No upstream credential loader,
+network client, installer, automatic acceptance policy or extra hook is installed.

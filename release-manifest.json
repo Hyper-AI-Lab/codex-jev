@@ -5,32 +5,32 @@
       "sha256": "7e3d6fe13eb6047a58a27e88b55c34c19ca95c57029b3c4aa8620e92ccaf9375"
     },
     "NOTICE.md": {
-      "bytes": 1301,
-      "sha256": "3bf93c593f15776f46a4c288b044335dde55f382a6e609aa665ca23378ebc40e"
+      "bytes": 1757,
+      "sha256": "d510ab6eb22b2f71098e7e52db81b16f6ec7f5ec4ff7cee96e9bfa1fad10bdc4"
     },
     "THIRD_PARTY_NOTICES.txt": {
       "bytes": 307223,
-      "sha256": "86bf0bc3ddb946225d64bc0841ce88099d17e841a5481c822e35d7c6efd4cb23"
+      "sha256": "7d8b9f59d8bffe8bc5e194c92d0bb8f340f2510a088f476f7287fb38ce3e1d56"
     },
     "dist/dependency-lock.json": {
       "bytes": 89221,
-      "sha256": "fe5fd17b11958a30334915328ba91876aff526324160e4d49aaee3086c9934bc"
+      "sha256": "74ca5844875ab809de1c289ffd4ddf5e4a6ddd1581c3622448722eb27da79cc3"
     },
     "dist/live-smoke.mjs": {
-      "bytes": 662023,
-      "sha256": "aaa77502a0043fd65fc5703b6cb7fc80dafa09103c91d2ce5ef39034db8bbecb"
+      "bytes": 662254,
+      "sha256": "246947cc1f8b8e7fcb41ef47ffb2b7a95ecd1e7349a6c0231704f758be717ce9"
     },
     "dist/server.mjs": {
-      "bytes": 1463836,
-      "sha256": "6851eaf41a7d31cfcefb617edb4ae875090d1663a003a6e5c7b13e130c562d79"
+      "bytes": 1486431,
+      "sha256": "f967b19f02cd6e789001ef5f5bedc965b89892c75511febbfd6b43daf1e5ea81"
     },
     "package.json": {
-      "bytes": 2101,
-      "sha256": "f47dbc7679b822881798fa2e1aa38f3d3dcf64f18081303b1aafaf1551767150"
+      "bytes": 2163,
+      "sha256": "cc3d3c440c71fa9893e1733cebd40a14fa8443989873d4a8a9779c51460f4cde"
     },
     "runtime/common.py": {
-      "bytes": 12673,
-      "sha256": "d5156b6ac354f8a92328b85bc5f89a95dec0451049a6e093d337aac6c2476e8b"
+      "bytes": 12948,
+      "sha256": "ed4e334a802eb900f2c1d4c30e62a632b13abb3cf98173ed8457227896c8efae"
     },
     "runtime/doctor.py": {
       "bytes": 2150,
@@ -41,24 +41,28 @@
       "sha256": "3ac3497bd4db7d2cf9d32f2ed93152bfafb5c875754e2dc4e8eefb11e92e135f"
     },
     "runtime/history_usage.py": {
-      "bytes": 14599,
-      "sha256": "e5e4a8a2949a9c1e1df9e048565ce2e0090598e7381fc71ac599e792ada3b34a"
+      "bytes": 17810,
+      "sha256": "825ae65102a307a82d3441674fb6e8540093cb8c21b88f570081656a542d8bc3"
     },
     "runtime/installer.py": {
-      "bytes": 25985,
-      "sha256": "002e69b22921212d52de52fad5f71ca3a810fe4373fc7c2df4bf53c2492e511c"
+      "bytes": 26413,
+      "sha256": "cec2760c121ba230600baf04f721c9db92b2d1c78c3b67c79c7190033586cf20"
     },
     "runtime/invocations.py": {
-      "bytes": 9835,
-      "sha256": "fe669e31261f0bd9016ebabc4a7bb6d89698ed59f567e83bbfe6316b34181cb3"
+      "bytes": 9853,
+      "sha256": "41de023a8baaa5e0068d263039f18990c2de6968eb8b2b710ded0483d2f002f2"
     },
     "runtime/invocations.sql": {
       "bytes": 921,
       "sha256": "1d10f0613ca761d6b4ac07b06de3ed5a198f228712a772d8ddbe742bbb9ac55e"
     },
+    "runtime/maintenance_health.py": {
+      "bytes": 2153,
+      "sha256": "4b24b738a0a3ec7e99a1010098f38f3f32c95d95a0d97493a2b5fbc81ec16267"
+    },
     "runtime/manage.py": {
-      "bytes": 17158,
-      "sha256": "c4d053fb8cc2d06cf160dd1570991a12ce3dc8513c2a67bc98f04c0debc817c9"
+      "bytes": 17386,
+      "sha256": "33c91afa50737e6b0f36bf11ad9053006080162aec3996b115c032db9ba2e784"
     },
     "runtime/measurements.py": {
       "bytes": 12103,
@@ -73,16 +77,20 @@
       "sha256": "dfb3ca336ef7400277290e0d3c66d835eec04971190e89f1b34820ed03600099"
     },
     "runtime/releases.py": {
-      "bytes": 6403,
-      "sha256": "041d86c4aa70feb4b53d75d5c552c557105d818563a6f0e4195a428d83da548c"
+      "bytes": 6629,
+      "sha256": "18581077c2529a9241a687c517ac07197073332c8960445980131932420ed913"
     },
     "runtime/retrieval.py": {
       "bytes": 10457,
       "sha256": "c593514284fdc581f213794a1ed32c04cf2facd59b59c8ea91cc2a46d761f3d1"
     },
+    "runtime/skill_files.py": {
+      "bytes": 2595,
+      "sha256": "5e5b6b6eb1c5926401a21bb65e2e0b39ed89aa74d80bb00f8101b68ee198b148"
+    },
     "runtime/task_report.py": {
-      "bytes": 3877,
-      "sha256": "dee02dd0a0cf3fbf5f19f3021f1d259629328ca5dc8bbdddaf451d644ae296a4"
+      "bytes": 4060,
+      "sha256": "91a15d33cb42b6a20a0d0479efa1a8e5758a41dc8f29cfdd15f13d13b9c92d64"
     },
     "runtime/telemetry.py": {
       "bytes": 16953,
@@ -117,8 +125,8 @@
       "sha256": "307463a14f18c49f9dfc70b6999389fe3a47f8887c5f5edd2f72e7ab1170980f"
     },
     "scripts/investigate.mjs": {
-      "bytes": 6078,
-      "sha256": "821b13bc1de53b6587f4470339cf5f72a2f8a6492d0271ee7eb94f148b772718"
+      "bytes": 7464,
+      "sha256": "a0a5f2595f5fcc3bb3a674a62d6fc80e84803e1a3c5ba677c85daefae516577a"
     },
     "scripts/live-smoke.mjs": {
       "bytes": 806,
@@ -148,6 +156,22 @@
       "bytes": 4110,
       "sha256": "6bfa33aaba733f63c384ec3269547f889f1b01f2f1ef5b28b56d73189f632f32"
     },
+    "skills/codex-jev/SKILL.md": {
+      "bytes": 2187,
+      "sha256": "0481a51421048300b3db31994ad7ee02e214ff3d758335b82e7b3804d592a6b4"
+    },
+    "skills/codex-jev/references/LICENSES.txt": {
+      "bytes": 1105,
+      "sha256": "8ea434f685a9a1c9b1c0f20e5a2e545280c8beaad1ec883ca7661591ca9a9c4c"
+    },
+    "skills/codex-jev/references/typed-judgments.md": {
+      "bytes": 2031,
+      "sha256": "73ffe076aa7c8a42b45bcb785eaed2e6bf8630d156b61708e8c2de34ef9e47d0"
+    },
+    "skills/codex-jev/references/typesafe-guidance.md": {
+      "bytes": 1726,
+      "sha256": "d88a8690712b23926ce72e8590f63cd8b31a3ddb2f16a9832f71aced35541c37"
+    },
     "src/cli-task.mjs": {
       "bytes": 1539,
       "sha256": "64722320c8194093a3b7599ec8573ba6606b44d43710872a621036da2334a480"
@@ -157,8 +181,8 @@
       "sha256": "d1ffbb31f9db6d5a0e0039c85e5b3a76d69eb1612be75cedf9de148dfcd3753e"
     },
     "src/entrypoint-error.mjs": {
-      "bytes": 959,
-      "sha256": "5cb3d6cbc7bb6059807b81a6722b50355c722dd1997f186daaed90173b6d718c"
+      "bytes": 1112,
+      "sha256": "c14ebf2cbd35a29102b1aa67416f0249511ab98a55c8561e0553d848854fbe41"
     },
     "src/evaluation-launch.mjs": {
       "bytes": 1449,
@@ -181,24 +205,32 @@
       "sha256": "9925ee3e93821587511913196752ccc955fe1c2e4a5dd19c868777eb0e937037"
     },
     "src/hardened-service.mjs": {
-      "bytes": 29875,
-      "sha256": "2c181fedeb71adf36960ecf16bab48fd37a4677f23634a3e9b1966e009fdfd29"
+      "bytes": 26606,
+      "sha256": "f2549aaaa0bc3adf2a60e9866a9f285d32d18355ca986ccd95587f8cc4b5bfe0"
     },
     "src/hardened-store.mjs": {
-      "bytes": 17297,
-      "sha256": "73801ebc0be421ea2fa2edf4f665171d8c91a29823caa38d6bb6f4554fc8dd3e"
+      "bytes": 17373,
+      "sha256": "5cc3d90a01f0988748a501e83ad6b29600ee09a51ae63a9b490993f109a1bd8b"
+    },
+    "src/integration-status.mjs": {
+      "bytes": 2360,
+      "sha256": "fb752e6ab2c296a7fdf0cf55dc0836adb944ea660d003ba17e208c065c9c17a1"
     },
     "src/investigator.mjs": {
       "bytes": 23619,
       "sha256": "2aacddc2dde460c66e6edd587f71f8b3c75a9c1cf782e82efec8d3507062cc85"
     },
     "src/invocation-ledger.mjs": {
-      "bytes": 10435,
-      "sha256": "0a56e6686e960397facb0532973f8025fcfd896404bdc05d7123b99745e1c368"
+      "bytes": 10714,
+      "sha256": "52698e262a76c74c8df4e63867e5bf7d819f88c14c3dd177ca953bdeea9f3dbe"
+    },
+    "src/judgments.mjs": {
+      "bytes": 11141,
+      "sha256": "18c6e7f4919f5b071f6c6694242b18835793ac9f62e87d4c1bda0d5701391441"
     },
     "src/mcp-server.mjs": {
-      "bytes": 6679,
-      "sha256": "756c16ac86f68a26ef500510155e1602eb953cd7e99cca31d3359c35967b399c"
+      "bytes": 8247,
+      "sha256": "9a46d8202afcd3153b5f74cfd9e5be20f06e571b2363dd6e88d8bb775b2b5206"
     },
     "src/measured-operation.mjs": {
       "bytes": 2763,
@@ -212,9 +244,13 @@
       "bytes": 1676,
       "sha256": "4462d83a25eae307b05637a75926f6e7028575b9990750279faffd108ca2fae7"
     },
+    "src/protected-provider.mjs": {
+      "bytes": 9548,
+      "sha256": "095db7ebb2811671cb205fa7cb651de0b458330df91c28ef6ac241698d7564a2"
+    },
     "src/release-info.mjs": {
-      "bytes": 3288,
-      "sha256": "e545a0eceb9dd23c6bebe6eec8a394bf96bcf4b97ad935a820176566d02dd8db"
+      "bytes": 3758,
+      "sha256": "7e3631a85d27b4d498a01ecc5619c90782c95f6ae90ec11ed6f3309e96be30dc"
     },
     "src/retrieval-archive.mjs": {
       "bytes": 1516,

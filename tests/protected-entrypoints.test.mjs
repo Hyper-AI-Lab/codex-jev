@@ -58,6 +58,35 @@ test('CLI blocks foreign roots, unsafe flags and halts before network; errors ne
   await assert.rejects(runCli(['--root', f.root, '--query', 'dispatch', '--local'], options), { code: 'halted' });
 });
 
+test('CLI judgment loads a protected local spec and shares reservations/cache without raw content output', async t => {
+  const f = await fixture(t); let calls = 0;
+  await mkdir(join(f.home, 'secrets'), { mode: 0o700, recursive: true });
+  await writeFile(join(f.home, 'secrets/typesafe_api_key'), 'offline-key', { mode: 0o600 });
+  await writeFile(join(f.root, 'judgment.json'), JSON.stringify({ preset: 'completion_claim',
+    question: 'Does this define a dispatch handler? API_KEY="PRIVATE_MARKER"',
+    items: [{ path: 'source.txt', startLine: 1, endLine: 2 }] }));
+  const fetcher = async (_url, options) => {
+    calls++;
+    assert.doesNotMatch(options.body, /PRIVATE_MARKER|source\.txt/);
+    const body = JSON.parse(options.body);
+    return new Response(JSON.stringify({ model: body.model, usage: { input_tokens: 20, output_tokens: 5 },
+      answers: Object.fromEntries(Object.keys(body.questions).map(id => [id, { type: 'noul', noul: .8 }])) }));
+  };
+  const options = { home: f.home, boundRoot: f.root, fetcher };
+  const args = ['judge', '--root', f.root, '--spec', 'judgment.json', '--jev', '--allow-network'];
+  const first = await runCli(args, options), second = await runCli(args, options);
+  assert.equal(first.mode, 'jev'); assert.equal(second.mode, 'cache'); assert.equal(calls, 1);
+  assert.equal(first.advisory, true); assert.equal(first.results[0].source.path, 'source.txt');
+  assert.doesNotMatch(JSON.stringify(first), /PRIVATE_MARKER|line 0 dispatch/);
+  const store = new Store(f.home);
+  try { assert.equal(store.status()[0].requests, 1); } finally { store.close(); }
+  const local = await runCli(['judge', '--root', f.root, '--spec', 'judgment.json', '--local'], options);
+  assert.equal(local.reason, 'disabled'); assert.deepEqual(local.results, []); assert.equal(calls, 1);
+  await assert.rejects(runCli(['judge', '--root', f.root, '--spec', '.env'], options), { code: 'path_denied' });
+  await assert.rejects(runCli(['judge', '--root', f.root], options), { code: 'invalid_arguments' });
+  await assert.rejects(runCli(['judge', '--root', f.root, '--spec', 'judgment.json', '--model', 'other'], options), { code: 'invalid_arguments' });
+});
+
 test('isolated fixture authorization cannot grant ordinary or mutable-source access', async t => {
   const f = await fixture(t), root = join(f.home, 'evaluations/run/fixtures/task');
   await mkdir(root, { recursive: true });

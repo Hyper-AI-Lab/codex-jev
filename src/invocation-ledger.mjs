@@ -4,7 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { dirname, resolve } from 'node:path';
 
 const OPERATIONS = new Set([
-  'search_workspace_evidence', 'read_large_text_evidence', 'read_selected_evidence', 'list_evidence', 'evidence_status',
+  'search_workspace_evidence', 'read_large_text_evidence', 'read_selected_evidence', 'list_evidence', 'evidence_status', 'judge_evidence',
 ]);
 const ORIGINS = new Set(['ordinary', 'synthetic', 'comparison', 'unattributed']);
 const METRICS = new Set([
@@ -218,7 +218,9 @@ export class InvocationLedger {
       (SELECT COUNT(*) FROM invocations WHERE session_hash IS NOT NULL AND turn_hash IS NOT NULL AND call_hash IS NOT NULL) AS verified,
       (SELECT COUNT(*) FROM invocation_receipts WHERE invocation_id IS NULL) AS pending,
       (SELECT COUNT(*) FROM invocations WHERE result_status='started') AS unfinished`).get();
-    return { ...counts, accountSavingsMeasured: false };
+    const capabilities = this.db.prepare('SELECT operation, COUNT(*) AS count FROM invocations GROUP BY operation').all()
+      .filter(row => OPERATIONS.has(row.operation));
+    return { ...counts, byOperation: Object.fromEntries(capabilities.map(row => [row.operation, row.count])), accountSavingsMeasured: false };
   }
 
   close() {

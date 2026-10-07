@@ -133,6 +133,11 @@ def write_transaction(changes):
     try:
         for path, data in changes.items():
             existed, before = originals[path]
+            if data is None:
+                if existed:
+                    written.append(path)
+                    no_symlinks(path).unlink()
+                continue
             if existed and data == before:
                 continue
             written.append(path)
@@ -141,9 +146,10 @@ def write_transaction(changes):
         for path in reversed(written):
             existed, before = originals[path]
             current = read_bytes(path)
-            if current == before and (existed or not path.exists()):
+            if current == before and path.exists() == existed:
                 continue
-            if current != changes[path]:
+            expected = b"" if changes[path] is None else changes[path]
+            if current != expected or (changes[path] is None and path.exists()):
                 raise ValueError(
                     "Concurrent owner change preserved; inspect pending installation"
                 ) from None

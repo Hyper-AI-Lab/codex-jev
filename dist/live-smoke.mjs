@@ -18041,7 +18041,7 @@ var Store = class {
     };
   }
   measure({ trialId, workspaceHash, sessionId, mode, metrics, revision = "legacy", origin = "unattributed" }) {
-    if (!/^[a-f0-9]{64}$/.test(workspaceHash) || !/^[a-f0-9-]{36}$/.test(sessionId) || !["jev", "cache", "bypass", "local-fallback", "exact-read"].includes(mode) || !(trialId === "qualified" || /^[a-f0-9-]{36}$/.test(trialId)) || !(revision === "legacy" || /^[a-f0-9]{64}$/.test(revision)) || !["ordinary", "synthetic", "comparison", "unattributed"].includes(origin)) throw new SafeError("invalid_metrics", "Invalid measurement identity");
+    if (!/^[a-f0-9]{64}$/.test(workspaceHash) || !/^[a-f0-9-]{36}$/.test(sessionId) || !["jev", "cache", "bypass", "local-fallback", "exact-read", "judgment-jev", "judgment-cache", "judgment-unavailable", "judgment-error"].includes(mode) || !(trialId === "qualified" || /^[a-f0-9-]{36}$/.test(trialId)) || !(revision === "legacy" || /^[a-f0-9]{64}$/.test(revision)) || !["ordinary", "synthetic", "comparison", "unattributed"].includes(origin)) throw new SafeError("invalid_metrics", "Invalid measurement identity");
     const names = [
       "candidateEvidenceBytes",
       "localPageEvidenceBytes",
@@ -18349,6 +18349,7 @@ async function entrypointError(error2, home) {
   }
   return {
     code: error2 instanceof SafeError ? error2.code : "evidence_failed",
+    ...Number.isInteger(error2.jevRequests) && error2.jevRequests >= 0 && error2.jevRequests <= 1 ? { metrics: { jevRequests: error2.jevRequests } } : {},
     message: (error2 instanceof SafeError ? error2.message : "Evidence operation failed; no unsafe source or error payload returned.") + checkpoint
   };
 }

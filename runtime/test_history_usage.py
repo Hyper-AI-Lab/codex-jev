@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from unittest.mock import patch
 
 from common import encoded
-from history_usage import collect_history, observe_hook, register_history
+from history_usage import MAX_LINE, collect_history, coverage, observe_hook, register_history
 from measurements import record, report
 from test_support import RuntimeCase
 
@@ -61,6 +61,19 @@ class HistoryUsageTests(RuntimeCase):
         self.lines.append(self.response("new"))
         self.flush()
         self.assertEqual(self.collect()["recorded"], 1)
+
+    def test_coverage_reports_numeric_gaps_without_paths_or_false_completeness(self):
+        self.assertEqual(coverage(self.home, "session-one")["state"], "unregistered")
+        self.register()
+        with self.path.open("ab") as stream:
+            stream.write(b"x" * (MAX_LINE + 1) + b"\n")
+        self.collect()
+        summary = coverage(self.home, "session-one")
+        self.assertEqual(summary["state"], "gaps_observed")
+        self.assertEqual(summary["skippedRecords"], 1)
+        self.assertFalse(summary["wholeTaskCoverageVerified"])
+        self.assertNotIn(str(self.root), json.dumps(summary))
+        self.assertEqual(coverage(self.home, "other-task")["state"], "unregistered")
 
     def test_partial_line_waits_then_records_once(self):
         self.register()
@@ -158,6 +171,97 @@ class HistoryUsageTests(RuntimeCase):
             self.collect()
         self.assertEqual(state.read_bytes(), before)
 
+    def test_current_client_registers_new_and_resumed_response_histories(self):
+        for original_version in ("0.160.0", "0.157.1", "0.130.0"):
+            with self.subTest(original_version=original_version):
+                path = self.folder / f"rollout-origin-{original_version}.jsonl"
+                head = dict(type="session_meta", payload={"id": "session-one", "cwd": str(self.root),
+                            "cli_version": original_version})
+                path.write_bytes(json.dumps(head).encode() + b"\n")
+                registered = register_history(self.home, path, "session-one", client_version="0.160.0")
+                self.assertEqual(registered["format"], "response_records")
+                with path.open("ab") as stream:
+                    stream.write(json.dumps(self.response(f"response-{original_version}")).encode() + b"\n")
+                self.assertEqual(collect_history(self.home, path, "session-one")["recorded"], 1)
+        self.assertEqual(self.tokens(), 300)
+
+    def test_oversized_record_advances_without_hiding_coverage_gap(self):
+        self.register()
+        with self.path.open("ab") as stream:
+            stream.write(b'{"type":"response_item","payload":"' + b"x" * (MAX_LINE * 2) + b'"}\n')
+            stream.write(json.dumps(self.response()).encode() + b"\n")
+        result = self.collect()
+        self.assertEqual(result["recorded"], 1)
+        self.assertEqual(result["state"], "incomplete")
+        self.assertEqual(result["skipped_records"], 1)
+        self.assertGreater(result["skipped_bytes"], MAX_LINE * 2)
+        self.assertFalse(result["discarding_oversized"])
+        self.assertEqual(self.collect()["skipped_records"], 1)
+        self.assertEqual(self.tokens(), 100)
+
+    def test_oversized_partial_record_resumes_after_restart_with_bounded_scan(self):
+        self.register()
+        with self.path.open("ab") as stream:
+            stream.write(b"x" * (MAX_LINE * 3))
+        with patch("history_usage.MAX_BATCH", MAX_LINE + 100):
+            first = self.collect()
+            self.assertLessEqual(first["scanned_bytes"], MAX_LINE + 100)
+            self.assertTrue(first["discarding_oversized"])
+            self.assertEqual(first["skipped_records"], 1)
+            second = self.collect()
+            self.assertLessEqual(second["scanned_bytes"], MAX_LINE + 100)
+            self.assertEqual(second["skipped_records"], 1)
+        waiting = self.collect()
+        self.assertEqual(waiting["state"], "partial_oversized_record")
+        with self.path.open("ab") as stream:
+            stream.write(b"\n" + json.dumps(self.response()).encode() + b"\n")
+        done = self.collect()
+        self.assertEqual(done["recorded"], 1)
+        self.assertEqual(done["skipped_records"], 1)
+        self.assertFalse(done["discarding_oversized"])
+        self.assertEqual(self.tokens(), 100)
+
+    def test_v1_cursor_migrates_only_on_successful_collection(self):
+        self.register()
+        state = self.read_state("usage-histories.json")
+        state["version"] = 1
+        for cursor in state["histories"].values():
+            for key in ("skipped_records", "skipped_bytes", "discarding_oversized"):
+                cursor.pop(key, None)
+        self.state("usage-histories.json", state)
+        self.collect()
+        migrated = self.read_state("usage-histories.json")
+        self.assertEqual(migrated["version"], 2)
+        self.assertEqual(next(iter(migrated["histories"].values()))["skipped_records"], 0)
+
+    def test_oversize_cursor_write_failure_and_truncation_preserve_truth(self):
+        self.register()
+        before = (self.home.path / "usage-histories.json").read_bytes()
+        with self.path.open("ab") as stream:
+            stream.write(b"x" * (MAX_LINE + 10) + b"\n" + json.dumps(self.response()).encode() + b"\n")
+        with patch("history_usage.atomic_write", side_effect=OSError("synthetic disk full")):
+            with self.assertRaises(OSError):
+                self.collect()
+        self.assertEqual((self.home.path / "usage-histories.json").read_bytes(), before)
+        self.assertEqual(self.collect()["skipped_records"], 1)
+        self.assertEqual(self.tokens(), 100)
+        cursor_before = (self.home.path / "usage-histories.json").read_bytes()
+        self.path.write_bytes(b"{}\n")
+        with self.assertRaises(ValueError):
+            self.collect()
+        self.assertEqual((self.home.path / "usage-histories.json").read_bytes(), cursor_before)
+
+    def test_invalid_discard_state_is_not_replaced(self):
+        self.register()
+        state = self.read_state("usage-histories.json")
+        cursor = next(iter(state["histories"].values()))
+        cursor["discarding_oversized"] = "true"
+        self.state("usage-histories.json", state)
+        before = (self.home.path / "usage-histories.json").read_bytes()
+        with self.assertRaises(ValueError):
+            self.collect()
+        self.assertEqual((self.home.path / "usage-histories.json").read_bytes(), before)
+
     def test_cursor_write_failure_can_retry_without_duplicate_usage(self):
         self.register()
         self.lines.append(self.response())
@@ -181,12 +285,15 @@ class HistoryUsageTests(RuntimeCase):
         self.assertEqual(collect_history(self.home, other, "session-one")["recorded"], 0)
         self.assertEqual(self.tokens(), 100)
 
-    def test_oversize_budget_does_not_advance_into_unread_record(self):
+    def test_oversize_budget_discards_only_the_complete_oversized_record(self):
         self.register()
         with self.path.open("ab") as stream:
             stream.write(b"x" * 2049 + b"\n")
         with patch("history_usage.MAX_LINE", 2048):
-            self.assertEqual(self.collect()["state"], "oversized_record")
+            result = self.collect()
+            self.assertEqual(result["state"], "incomplete")
+            self.assertEqual(result["skipped_records"], 1)
+            self.assertEqual(result["skipped_bytes"], 2050)
 
     def test_parent_directory_symlink_swap_is_rejected(self):
         self.register()

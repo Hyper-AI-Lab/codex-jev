@@ -13,5 +13,6 @@ export async function entrypointError(error, home) {
     } catch { checkpoint = ' Automatic checkpoint failed; halt remains set. Inspect local recovery status.'; }
   }
   return { code: error instanceof SafeError ? error.code : 'evidence_failed',
+    ...(Number.isInteger(error.jevRequests) && error.jevRequests >= 0 && error.jevRequests <= 1 ? { metrics: { jevRequests: error.jevRequests } } : {}),
     message: (error instanceof SafeError ? error.message : 'Evidence operation failed; no unsafe source or error payload returned.') + checkpoint };
 }

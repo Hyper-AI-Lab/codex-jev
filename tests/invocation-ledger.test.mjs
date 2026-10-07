@@ -53,7 +53,8 @@ test('records only identity hashes and allowlisted metrics; summary makes no sav
   assert.equal(serialized.includes('/synthetic/private/project'), false);
   assert.equal(serialized.includes('safe'), false);
   assert.equal(row.metrics, '{"cacheHits":0,"jevRequests":1,"responseBytes":10}');
-  assert.deepEqual(ledger.summary(), { total: 1, verified: 0, pending: 0, unfinished: 0, accountSavingsMeasured: false });
+  assert.deepEqual(ledger.summary(), { total: 1, verified: 0, pending: 0, unfinished: 0,
+    byOperation: { search_workspace_evidence: 1 }, accountSavingsMeasured: false });
   const info = await stat(join(home, 'invocations.sqlite3'));
   assert.equal(info.mode & 0o777, 0o600);
 });
@@ -86,7 +87,8 @@ test('completion replay is identical-only and unfinished rows remain started', a
   assert.throws(() => ledger.finish(id, { status: 'success', metrics: { durationMs: 5 } }));
   assert.throws(() => ledger.finish('00000000-0000-4000-8000-000000000000', outcome));
   ledger.begin({ workspace: '/tmp/w', operation: OP, input: INPUT, revision: REVISION });
-  assert.deepEqual(ledger.summary(), { total: 2, verified: 0, pending: 0, unfinished: 1, accountSavingsMeasured: false });
+  assert.deepEqual(ledger.summary(), { total: 2, verified: 0, pending: 0, unfinished: 1,
+    byOperation: { search_workspace_evidence: 2 }, accountSavingsMeasured: false });
 });
 
 test('prunes expired completed details but preserves unfinished operations and unexpired receipts', async t => {

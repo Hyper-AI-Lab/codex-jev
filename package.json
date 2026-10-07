@@ -12,7 +12,7 @@
   "bin": { "codex-jev": "./scripts/investigate.mjs" },
   "files": [
     "dist/*.mjs", "dist/*.LEGAL.txt", "dist/dependency-lock.json", "release-manifest.json", "src/*.mjs", "scripts/*.mjs",
-    "runtime/*.py", "runtime/*.sql", "benchmarks/*.mjs", "benchmarks/README.md", "benchmarks/fixtures", "benchmarks/evaluation-v2.manifest.json", "tests/*.mjs", "docs/*.md", "docs/assets/*.svg",
+    "runtime/*.py", "runtime/*.sql", "skills/codex-jev/SKILL.md", "skills/codex-jev/references/*", "benchmarks/*.mjs", "benchmarks/README.md", "benchmarks/fixtures", "benchmarks/evaluation-v2.manifest.json", "tests/*.mjs", "docs/*.md", "docs/assets/*.svg",
     "README.md", "LICENSE", "NOTICE.md", "THIRD_PARTY_NOTICES.txt", "SECURITY.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "CHANGELOG.md", "eslint.config.mjs", ".mcp.json"
   ],
   "scripts": {
@@ -26,7 +26,7 @@
     "status": "node scripts/retrieval-trial.mjs report"
   },
   "devDependencies": {
-    "@modelcontextprotocol/sdk": "1.30.0",
+    "@modelcontextprotocol/sdk": "1.31.0",
     "esbuild": "0.28.2",
     "eslint": "10.11.0",
     "zod": "4.6.5"

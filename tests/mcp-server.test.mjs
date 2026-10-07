@@ -32,7 +32,13 @@ test('built stdio server works in two isolated workspaces with private shared co
       clients.push(client); await client.connect(transport);
       assert.match(client.getInstructions(), /at most one targeted recovery selection/);
       const listed = await client.listTools();
-      assert.deepEqual(listed.tools.map(t => t.name).sort(), ['evidence_status', 'list_evidence', 'read_large_text_evidence', 'read_selected_evidence', 'search_workspace_evidence']);
+      assert.deepEqual(listed.tools.map(t => t.name).sort(), ['evidence_status', 'judge_evidence', 'list_evidence', 'read_large_text_evidence', 'read_selected_evidence', 'search_workspace_evidence']);
+      const judgment = await client.callTool({ name: 'judge_evidence', arguments: { workspaceRoot: root, preset: 'completion_claim',
+        question: 'This source declares evidence as 42', items: [{ path: 'source.js', startLine: 1, endLine: 1 }] } });
+      assert.equal(judgment.isError, undefined);
+      assert.equal(judgment.structuredContent.mode, 'unavailable');
+      assert.equal(judgment.structuredContent.reason, 'disabled');
+      assert.deepEqual(judgment.structuredContent.results, []);
       const result = await client.callTool({ name: 'search_workspace_evidence', arguments: { workspaceRoot: root, query: 'evidence' } });
       assert.equal(result.isError, undefined);
       assert.equal(result.structuredContent.mode, 'bypass');
@@ -49,6 +55,7 @@ test('built stdio server works in two isolated workspaces with private shared co
       assert.equal(denied.isError, true);
       const status = await client.callTool({ name: 'evidence_status', arguments: {} });
       assert.equal(status.structuredContent.enabled, false);
+      assert.equal(status.structuredContent.judgments.advisoryOnly, true);
       assert.equal(status.structuredContent.selectionMode, 'local_only');
       assert.deepEqual(status.structuredContent.liveSelectionBlockers, ['selection_disabled', 'qualification_or_owner_authorization_required']);
       assert.equal(status.structuredContent.hookTrust, 'not_inspected_by_mcp');

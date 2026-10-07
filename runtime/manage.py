@@ -20,7 +20,7 @@ from recovery import Guard, halt, resume
 READ_ONLY_EVIDENCE_TOOLS = {
     f"mcp__jev_context__{name}" for name in (
         "evidence_status", "search_workspace_evidence", "read_large_text_evidence",
-        "read_selected_evidence", "list_evidence")
+        "read_selected_evidence", "list_evidence", "judge_evidence")
 }
 
 
@@ -77,6 +77,9 @@ def collect_hook_usage(home, payload):
                 "at": now(), "state": observed["state"],
                 "recorded": observed.get("recorded"),
                 "invalid_records": observed.get("invalid_records"),
+                "skipped_records": observed.get("skipped_records"),
+                "skipped_bytes": observed.get("skipped_bytes"),
+                "discarding_oversized": observed.get("discarding_oversized"),
             }))
 
 

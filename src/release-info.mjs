@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 
 const hash = data => createHash('sha256').update(data).digest('hex');
 const hex = /^[a-f0-9]{64}$/;
-const eligible = name => /^(?:package\.json|LICENSE|NOTICE\.md|THIRD_PARTY_NOTICES\.txt|runtime\/(?!test_)[A-Za-z0-9_-]+\.(?:py|sql)|(?:src|scripts)\/[A-Za-z0-9_-]+\.mjs|dist\/[A-Za-z0-9_.-]+\.(?:mjs|LEGAL\.txt)|dist\/dependency-lock\.json)$/.test(name);
+const eligible = name => /^(?:package\.json|LICENSE|NOTICE\.md|THIRD_PARTY_NOTICES\.txt|runtime\/(?!test_)[A-Za-z0-9_-]+\.(?:py|sql)|(?:src|scripts)\/[A-Za-z0-9_-]+\.mjs|dist\/[A-Za-z0-9_.-]+\.(?:mjs|LEGAL\.txt)|dist\/dependency-lock\.json|skills\/codex-jev\/(?:SKILL\.md|references\/(?:typed-judgments\.md|typesafe-guidance\.md|LICENSES\.txt)))$/.test(name);
 
 export async function releaseInfo(url, expected = process.env.JEV_RELEASE_ID) {
   const root = dirname(dirname(fileURLToPath(url)));
@@ -18,6 +18,10 @@ export async function releaseInfo(url, expected = process.env.JEV_RELEASE_ID) {
   }
   const read = async (name, maxBytes) => {
     const path = join(root, name), parent = await lstat(dirname(path)), info = await lstat(path);
+    for (let ancestor = dirname(path); ancestor !== root; ancestor = dirname(ancestor)) {
+      const folder = await lstat(ancestor);
+      if (!folder.isDirectory() || folder.isSymbolicLink()) throw new Error('unsafe_release_path');
+    }
     if (!parent.isDirectory() || parent.isSymbolicLink() || !info.isFile() || info.isSymbolicLink() || info.nlink !== 1 ||
         info.size > maxBytes || (info.mode & 0o222)) throw new Error('unsafe_release_component');
     const bytes = await readFile(path), after = await lstat(path);
@@ -43,5 +47,6 @@ export async function releaseInfo(url, expected = process.env.JEV_RELEASE_ID) {
   return { state: 'immutable_release', verified: true, id, version: manifest.version,
     components: { bundle: manifest.files['dist/server.mjs'].sha256,
       python: manifest.files['runtime/manage.py'].sha256, policy: manifest.files['src/hardened-policy.mjs'].sha256,
-      schema: manifest.files['runtime/invocations.sql'].sha256, dependencies: manifest.files['dist/dependency-lock.json'].sha256 } };
+      schema: manifest.files['runtime/invocations.sql'].sha256, dependencies: manifest.files['dist/dependency-lock.json'].sha256,
+      ...(manifest.files['skills/codex-jev/SKILL.md'] ? { skill: manifest.files['skills/codex-jev/SKILL.md'].sha256 } : {}) } };
 }

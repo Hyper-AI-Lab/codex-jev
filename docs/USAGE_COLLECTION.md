@@ -3,7 +3,11 @@
 Native usage is not an invoice, a subscription-quota meter, or proof of savings.
 Cached input is part of input tokens; reasoning is part of output tokens. Neither
 subset is added to its parent total. Historical aggregates from older releases
-retain their original revision and are not retroactively validated.
+retain their original revision and are not retroactively validated. Native
+measurement `revision` identifies the collecting runtime, not the MCP release
+that produced an earlier response. Backlogged observations keep their original
+timestamps but use the current collector hash; do not assign them to a deployment
+cohort without independently verified invocation receipts.
 
 ## Sources
 
@@ -35,12 +39,13 @@ and unregistered tasks are rejected. Parent-directory traversal uses directory
 descriptors with no-follow checks.
 
 Registration starts at the last complete line at registration time. It does not
-import an entire old conversation or attribute past work to a new integration
-revision. Each pass reads at most a bounded batch, retains partial lines, and
+import an entire old conversation. An existing registered backlog may contain
+older observations, so the collector hash alone is not execution-release
+attribution. Each pass reads at most a bounded batch, retains partial lines, and
 reports scan limits or invalid records. A crash after numeric recording but before
 cursor persistence replays the same receipt, not the charge. Nothing is uploaded.
 
-- Codex 0.157: response-identified `token_usage_record` observations. Accompanying
+- Codex 0.157 / 0.160.0: response-identified `token_usage_record` observations. Accompanying
   cumulative UI snapshots are ignored to avoid counting the same usage twice.
 - Codex 0.130 / 0.156: cumulative `token_count` snapshots. First observations and
   counter resets establish baselines. Only subsequent valid differences count.
@@ -69,6 +74,20 @@ changed cursor. Diagnose and preserve corrupt state before any explicit
 re-registration; never erase accounting to force a successful measurement.
 
 ## Bounds and Coverage
+
+Records larger than 1 MiB are discarded incrementally in bounded 64-KiB chunks,
+within the 8-MiB pass budget. The v2 cursor persists discard progress, skipped
+bytes and record counts, never record contents. A partial oversized record waits
+for its newline; following numeric usage can then be collected. Skips remain
+explicit coverage gaps, even when the record might have been non-usage text.
+Partial normal records are retried at their original boundary. Corruption,
+truncation and identity changes never reset the cursor automatically.
+
+Version-1 registries migrate in memory and are persisted as v2 only after a
+successful validated collection. Rolling back to an older runtime that cannot
+read v2 must report history unavailable; never overwrite the registry with an
+older backup or discard accounting to manufacture compatibility. Task reports
+include numeric history coverage; registration alone is not freshness proof.
 
 Numeric details expire after 30 days and have a 10,000-row limit. Native response
 receipts retain 30 days with a 100,000-entry cap; reaching capacity refuses further

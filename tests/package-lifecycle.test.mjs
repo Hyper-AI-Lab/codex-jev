@@ -19,7 +19,9 @@ test('offline package contains recovery runtime and survives isolated install, u
   for (const required of ['runtime/manage.py', 'runtime/common.py', 'runtime/installer.py', 'runtime/recovery.py',
     'runtime/measurements.py', 'runtime/telemetry.py', 'runtime/observer.py', 'runtime/retrieval.py',
     'runtime/invocations.sql', 'runtime/invocations.py', 'runtime/history_usage.py', 'runtime/releases.py', 'runtime/worker_quota.py', 'runtime/task_report.py', 'src/cli-task.mjs',
-    'release-manifest.json', 'dist/dependency-lock.json',
+    'release-manifest.json', 'dist/dependency-lock.json', 'runtime/skill_files.py', 'runtime/maintenance_health.py',
+    'src/protected-provider.mjs', 'src/judgments.mjs', 'skills/codex-jev/SKILL.md',
+    'skills/codex-jev/references/LICENSES.txt', 'skills/codex-jev/references/typed-judgments.md', 'skills/codex-jev/references/typesafe-guidance.md',
     'dist/server.mjs', 'dist/live-smoke.mjs',
     'src/private-read.mjs', 'src/process-identity.mjs', 'src/retrieval-archive.mjs', 'scripts/reservations.mjs', 'eslint.config.mjs', 'LICENSE',
     'benchmarks/fixtures/tenant-cache/src/cache.mjs', 'benchmarks/evaluation-v2.manifest.json', 'benchmarks/README.md',
@@ -28,7 +30,7 @@ test('offline package contains recovery runtime and survives isolated install, u
   await exec('tar', ['-xzf', join(temp, info.filename), '-C', temp]);
   const previous = join(temp, 'package'), upgraded = join(temp, 'upgrade');
   await mkdir(upgraded);
-  for (const path of ['runtime', 'dist', 'src', 'scripts', 'package.json', 'release-manifest.json', 'LICENSE', 'NOTICE.md', 'THIRD_PARTY_NOTICES.txt'])
+  for (const path of ['runtime', 'dist', 'src', 'scripts', 'skills', 'package.json', 'release-manifest.json', 'LICENSE', 'NOTICE.md', 'THIRD_PARTY_NOTICES.txt'])
     await cp(join(previous, path), join(upgraded, path), { recursive: true });
   const upgradeManage = join(upgraded, 'runtime/manage.py');
   await writeFile(upgradeManage, `${await readFile(upgradeManage, 'utf8')}\n# synthetic upgrade marker\n`);
@@ -57,6 +59,9 @@ test('offline package contains recovery runtime and survives isolated install, u
     assert.equal(result.loadedRelease.id, first.release_id);
     assert.equal(result.workspaceBinding, root);
     assert.equal(result.accessEvidence.currentKeyVerified, false);
+    assert.equal(result.skill.state, 'installed_verified');
+    assert.equal(result.skill.matchesLoadedRelease, true);
+    assert.equal(result.skill.clientLoaded, 'not_observable_by_mcp');
   } finally { await client.close(); }
   const doctor = await run(previous, 'doctor');
   assert.equal(doctor.release.verified, true);
@@ -71,6 +76,7 @@ test('offline package contains recovery runtime and survives isolated install, u
   assert.equal((await run(previous, 'install')).installed, true);
   assert.ok((await readFile(join(codex, 'config.toml'), 'utf8')).includes(first.release_root));
   assert.equal((await run(previous, 'uninstall')).uninstalled, true);
+  await assert.rejects(readFile(join(codex, 'skills/codex-jev/SKILL.md')), { code: 'ENOENT' });
   assert.equal(await readFile(join(codex, 'config.toml'), 'utf8'), original);
   assert.equal(await readFile(join(codex, 'auth.json'), 'utf8'), '{"test_only":"DO_NOT_TOUCH"}');
   assert.equal(await readFile(join(home, 'halt.json'), 'utf8'), '{"reason":"fixture_halt"}');

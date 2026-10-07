@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- Bounded typed advisory checks, classification and rubric scoring through one
+  protected Jev transport, exposed by MCP and the CLI.
+- One ownership-managed global skill with pinned MIT reference guidance.
+- Resumable oversized-history discard, Codex 0.160.0 compatibility and numeric
+  coverage gaps without retained record contents.
+- Explicit accounting failures, updater availability checks and transactional
+  skill rollback. No automatic daemon maintenance or native trust changes.
+- Pin MCP SDK1.31.0 for GHSA-6qxp-vccf-f47h; npm audit reports no vulnerabilities.
+- Verified Linux rollout; desktop reconnect and ordinary-work acceptance remain
+  open. No token, subscription-quota or coding-speed savings claim.
+
 ## 0.4.0-beta.1
 
 Initial Hyper AI Lab public beta, derived from the upstream MIT implementation.

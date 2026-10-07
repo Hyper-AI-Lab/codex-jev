@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tomllib
 from pathlib import Path
+from skill_files import prepare as prepare_skill, removal as remove_skill
 
 from common import atomic_write, encoded, git_root, no_symlinks, now
 from common import (
@@ -234,6 +235,7 @@ def install(home, node, workspace, entrypoint="dist", preserve_guidance_edits=Fa
         from releases import materialize
 
         release = materialize(home, CHECKOUT)
+        skill_changes, skill_owned = prepare_skill(home, release, previous)
         server = Path(release["root"]) / "dist/server.mjs"
         manage = Path(release["root"]) / "runtime/manage.py"
         expected = copy.deepcopy(config)
@@ -391,10 +393,11 @@ def install(home, node, workspace, entrypoint="dist", preserve_guidance_edits=Fa
             release_root=release["root"],
             launch_cwd="inherit_client_workspace",
             updated_at=now(),
+            skill=skill_owned,
         )
         if previous.get("blocks") or previous.get("hooks"):
             manifest["previous_owned"] = {
-                "blocks": previous["blocks"], "hooks": previous["hooks"]
+                "blocks": previous["blocks"], "hooks": previous["hooks"], "skill": previous.get("skill", {})
             }
         # Write ownership intent first so a crash leaves removals inspectable.
         # Backups contain only added non-secret entries and preimage hashes, never raw auth/config.
@@ -433,6 +436,7 @@ def install(home, node, workspace, entrypoint="dist", preserve_guidance_edits=Fa
             home.codex / "hooks.json": encoded(hooks),
             home.codex / "AGENTS.md": agents.encode(),
             config_path: encoded(local),
+            **skill_changes,
         }
         # Never read an existing credential, including for rollback bookkeeping.
         if not key_path.exists():
@@ -539,9 +543,10 @@ def uninstall(home):
                     del manifest["blocks"]["guidance"]
                 else:
                     conflicts.append("AGENTS.md:guidance")
-        manifest.update(
-            status="conflicts" if conflicts else "uninstalled", updated_at=now()
-        )
+        skill_changes, retained_skill, skill_conflicts = remove_skill(home, manifest)
+        conflicts.extend(skill_conflicts)
+        manifest["skill"] = retained_skill
+        manifest.update(status="conflicts" if conflicts else "uninstalled", updated_at=now())
         if not conflicts:
             manifest.pop("previous_owned", None)
         write_transaction(
@@ -549,6 +554,7 @@ def uninstall(home):
                 home.codex / "config.toml": raw.encode(),
                 home.codex / "hooks.json": encoded(hooks),
                 home.codex / "AGENTS.md": agents.encode(),
+                **skill_changes,
                 path: encoded(manifest),
             }
         )

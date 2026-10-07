@@ -8,6 +8,8 @@ import { evaluationLaunch } from './evaluation-launch.mjs';
 import { measuredOperation } from './measured-operation.mjs';
 import { InvocationLedger } from './invocation-ledger.mjs';
 import { releaseInfo } from './release-info.mjs';
+import { JUDGMENT_POLICY } from './judgments.mjs';
+import { historyStatus, skillStatus } from './integration-status.mjs';
 
 process.umask(0o077);
 const loadedRelease = await releaseInfo(import.meta.url);
@@ -49,6 +51,19 @@ register('read_selected_evidence', 'Hash-verified bounded read of retained, omit
 register('list_evidence', 'Paginate exact references, including omissions and critical diagnostics. Does not contact Jev.', {
   sessionId: z.string().uuid(), offset: z.number().int().min(0).max(512).optional(),
 }, input => service.list(input));
+register('judge_evidence', 'Advisory classification, yes/no checks or rubric scores for bounded exact local evidence. Never approves actions or proves tests passed. One explicit page/request only.', {
+  workspaceRoot: z.string().min(1),
+  kind: z.enum(['check', 'classification', 'score']).optional(),
+  question: z.string().min(1).max(1000).optional(),
+  criteria: z.union([z.record(z.string(), z.string().min(1).max(512)), z.array(z.string().min(1).max(512)).min(2).max(10)]).optional(),
+  preset: z.enum(['diagnostic_triage', 'completion_claim']).optional(),
+  items: z.array(z.union([
+    z.object({ path: z.string().min(1).max(512), startLine: z.number().int().min(1), endLine: z.number().int().min(1),
+      hash: z.string().regex(/^[a-f0-9]{64}$/).optional() }).strict(),
+    z.object({ sessionId: z.string().uuid(), evidenceId: z.string().min(1).max(100) }).strict(),
+  ])).min(1).max(20),
+  offset: z.number().int().min(0).max(19).optional().describe('Repeat the same batch at nextOffset to process a further bounded page.'),
+}, input => service.judge(input));
 register('evidence_status', 'Report selection enablement and conservative local accounting, never credentials.', {}, async () => {
   const config = await configuration(service.home);
   let invocationCoverage = { state: 'disabled' };
@@ -69,6 +84,10 @@ register('evidence_status', 'Report selection enablement and conservative local 
       ...(!config.live_validated && !['jev_trial', 'jev_default'].includes(selectionMode(config, service.boundRoot)) ? ['qualification_or_owner_authorization_required'] : []),
       ...(service.forceLocal ? ['comparison_local'] : [])],
     eligibilityNote: 'Configured eligibility only; per-request privacy, size, quota and budget checks still apply.',
+    judgments: { available: true, policy: JUDGMENT_POLICY, advisoryOnly: true,
+      kinds: ['check', 'classification', 'score'], presets: ['diagnostic_triage', 'completion_claim'],
+      maxItems: 20, maxOutboundBytes: 48 * 1024, liveAccessVerified: false },
+    skill: await skillStatus(service.home, loadedRelease), historyCompatibility: await historyStatus(service.home),
     validationBudgetUsd: config.validation_budget_usd, monthlyBudgetUsd: config.monthly_budget_usd, totalBudgetUsd: config.total_budget_usd,
     accounting: service.store.status(), reservations: service.store.reservations(), accessEvidence: service.store.accessEvidence(),
     hookTrust: 'not_inspected_by_mcp',

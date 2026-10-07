@@ -30,7 +30,9 @@ recovery-helper path. Duplicate markers or ambiguous paths still fail. Other
 configuration and native worker policies are never adopted or overwritten.
 
 Keep the previous release/checkout. Roll back by running that version's installer
-with the same Codex home, node and workspace. Never reset accounting or recovery
+with the same Codex home, node and workspace. For pre-skill releases, follow the
+owned-skill removal and history compatibility notes in [Recovery](RECOVERY.md)
+first. Never reset accounting or recovery
 state. Reload and verify the loaded release; revised hooks require native trust.
 The observer has its own ownership record and must be stopped before changing its
 definition. Reinstall the observer through the selected release's runtime, then

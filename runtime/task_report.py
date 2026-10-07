@@ -7,6 +7,7 @@ import time
 
 from common import identifier, no_symlinks, sha
 from invocations import usage_report
+from history_usage import coverage
 from measurements import FIELDS, KINDS, MAX_RECORDS, RETENTION_DAYS
 
 
@@ -40,7 +41,8 @@ def report(home, task):
         timeline.append({"at": row["at"], "kind": row["kind"], "revision": row["revision"],
                          "origin": row["origin"], "metrics": numeric})
     return {"taskHash": sha(task.encode()), "nativeTokensMeasured": any(k[0] == "native_usage" for k in groups),
-            "accountSavingsMeasured": False, "runtime": list(groups.values()), "retrieval": usage_report(home, task),
+            "accountSavingsMeasured": False, "historyCoverage": coverage(home, task),
+            "runtime": list(groups.values()), "retrieval": usage_report(home, task),
             "timeline": timeline[-200:], "timelineOmittedRecords": max(0, len(timeline) - 200),
             "scope": {"retentionDays": RETENTION_DAYS, "maxDetailRecords": MAX_RECORDS,
                       "retainedTaskRecords": len(rows), "wholeTaskCoverageVerified": False},
@@ -60,6 +62,7 @@ def markdown(value):
         for key, total in sorted(group["metrics"].items()):
             lines.append(f"| {group['kind']} | {group['revision'][:12]} | {group['origin']} | {key} | {group['coverage'][key]} | {total} |")
     lines += ["", f"Verified retrieval operations: {value['retrieval']['verifiedOperations']}",
-              f"Native token observations: {'present' if value['nativeTokensMeasured'] else 'missing'}", ""]
+              f"Native token observations: {'present' if value['nativeTokensMeasured'] else 'missing'}",
+              f"History coverage: {value.get('historyCoverage', {}).get('state', 'unknown')}", ""]
     lines.extend("- " + note for note in value["notes"])
     return "\n".join(lines) + "\n"

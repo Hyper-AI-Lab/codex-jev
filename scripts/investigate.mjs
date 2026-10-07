@@ -5,12 +5,15 @@ import { EvidenceService } from '../src/hardened-service.mjs';
 import { defaultHome, SafeError } from '../src/hardened-policy.mjs';
 import { entrypointError } from '../src/entrypoint-error.mjs';
 import { cliTask } from '../src/cli-task.mjs';
+import { excludedPath } from '../src/discovery.mjs';
+import { configuration } from '../src/hardened-policy.mjs';
 
-const HELP = `codex-jev [search|list|read] [options]
+const HELP = `codex-jev [search|list|read|judge] [options]
 
 Run from the current owner-authorized workspace. Uses the same protected key,
 redaction, shared budgets and quota halt as MCP. Does not read keys from env.
   --root PATH             Must match the current workspace (default: cwd)
+  --spec RELATIVE_PATH     Eligible workspace JSON judgment spec, at most 64 KiB
   --task ID               Registered task; required for persistent list/read
   --session ID            Evidence session from a search (list/read)
   --evidence ID           Exact evidence reference (read)
@@ -33,10 +36,10 @@ Model overrides and raw diagnostic dumps are no longer supported.
 
 export function parseArgs(argv) {
   argv = [...argv];
-  const operation = ['search', 'list', 'read'].includes(argv[0]) ? argv.shift() : 'search';
+  const operation = ['search', 'list', 'read', 'judge'].includes(argv[0]) ? argv.shift() : 'search';
   const input = { workspaceRoot: process.cwd(), requirements: [], pathFilters: [] };
   let local = false, jev = false, acknowledge = false, task;
-  const names = { '--root': 'workspaceRoot', '--path': 'path', '--query': 'query',
+  const names = { '--root': 'workspaceRoot', '--path': 'path', '--query': 'query', '--spec': 'spec',
     '--candidate-limit': 'candidateLimit', '--result-limit': 'resultLimit', '--detail': 'detailLevel',
     '--session': 'sessionId', '--evidence': 'evidenceId', '--offset': 'offset', '--start-line': 'startLine',
     '--end-line': 'endLine', '--column-offset': 'columnOffset', '--max-characters': 'maxCharacters' };
@@ -45,6 +48,7 @@ export function parseArgs(argv) {
     search: new Set(['--root', '--task', '--path', '--query', '--candidate-limit', '--result-limit', '--detail', '--requirement', '--path-filter', '--local', '--jev', '--allow-network']),
     list: new Set(['--root', '--task', '--session', '--offset']),
     read: new Set(['--root', '--task', '--session', '--evidence', '--start-line', '--end-line', '--column-offset', '--max-characters']),
+    judge: new Set(['--root', '--task', '--spec', '--local', '--jev', '--allow-network']),
   };
   const seen = new Set();
   for (let i = 0; i < argv.length; i++) {
@@ -67,8 +71,9 @@ export function parseArgs(argv) {
     } else input[names[arg]] = value;
   }
   if (jev !== acknowledge || (jev && local)) throw new SafeError('invalid_arguments', 'Use --jev with --allow-network, or --local.');
-  if (operation !== 'search' && (!task || !input.sessionId || (operation === 'read' && !input.evidenceId)))
+  if (['list', 'read'].includes(operation) && (!task || !input.sessionId || (operation === 'read' && !input.evidenceId)))
     throw new SafeError('invalid_arguments', 'List/read requires a registered --task and --session; read also needs --evidence.');
+  if (operation === 'judge' && !input.spec) throw new SafeError('invalid_arguments', 'Judge requires --spec with an eligible relative workspace JSON path.');
   return { input, local, requireJev: jev, operation, task };
 }
 
@@ -80,9 +85,20 @@ export async function runCli(argv, { home = defaultHome(), boundRoot = process.c
     ...(scope ? { owner: scope.owner } : {}),
     measurementOrigin: 'ordinary', ...(fetcher ? { fetcher } : {}) }).init();
   try {
-    const result = options.operation === 'list' ? await service.list(options.input) :
+    let judgment;
+    if (options.operation === 'judge') {
+      const root = await service.root(options.input), config = await configuration(home);
+      if (excludedPath(options.input.spec, config)) throw new SafeError('path_denied', 'Judgment specification is excluded.');
+      const source = await service.source(root, options.input.spec, 64 * 1024);
+      let parsed;
+      try { parsed = JSON.parse(source.text); } catch { throw new SafeError('invalid_input', 'Judgment specification must be bounded JSON.'); }
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) ||
+          (parsed.workspaceRoot !== undefined && parsed.workspaceRoot !== root)) throw new SafeError('invalid_input', 'Judgment specification must describe this workspace.');
+      judgment = await service.judge({ ...parsed, workspaceRoot: root });
+    }
+    const result = judgment ?? (options.operation === 'list' ? await service.list(options.input) :
       options.operation === 'read' ? await service.read(options.input) :
-        await service.investigate(options.input, Boolean(options.input.path));
+        await service.investigate(options.input, Boolean(options.input.path)));
     if (scope) Object.assign(result, { taskScope: scope.taskScope, taskAttribution: scope.taskAttribution });
     if (options.requireJev && !['jev', 'cache', 'bypass'].includes(result.mode)) {
       return { ...result, requestedSelectionUnavailable: true };
@@ -96,7 +112,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   try {
     const result = await runCli(process.argv.slice(2));
     console.log(typeof result === 'string' ? result : JSON.stringify(result));
-    if (result.requestedSelectionUnavailable) process.exitCode = 1;
+    if (result.requestedSelectionUnavailable || result.mode === 'unavailable') process.exitCode = 1;
   } catch (error) {
     console.error(JSON.stringify(await entrypointError(error, defaultHome())));
     process.exitCode = 1;

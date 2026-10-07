@@ -8,7 +8,8 @@ import { Store } from './hardened-store.mjs';
 import { authorizeFixture, verifyFixtureSource } from './evaluation-scope.mjs';
 import { discover, excludedPath, pathFilters } from './discovery.mjs';
 import { candidatesFrom, diverseShortlist, preview } from './evidence-ranges.mjs';
-import { privateRead } from './private-read.mjs';
+import { evaluate, protectedKey } from './protected-provider.mjs';
+import { judgeEvidence } from './judgments.mjs';
 import { MODEL, POLICY, SafeError, authorizedRoot, configuration, defaultHome, hash,
   privateDirectory, privacyIdentity, redact, redactSource, safeRead, safeReadBatch, selectionMode } from './hardened-policy.mjs';
 
@@ -56,20 +57,6 @@ function page(items, offset, limit) {
     result.push(item); bytes += size;
   }
   return { items: result, next: offset + result.length < items.length ? offset + result.length : null };
-}
-
-async function protectedKey(home) {
-  await privateDirectory(join(home, 'secrets'));
-  const path = join(home, 'secrets', 'typesafe_api_key');
-  let text;
-  try { text = await privateRead(path, { maxBytes: 4096 }); }
-  catch { throw new SafeError('unsafe_key', 'Jev key must be a stable owner-only regular file with one link.'); }
-  const key = text?.trim();
-  if (!key) return null;
-  if (/\s|["']/.test(key) || /^(?:export\b|Bearer\b|[A-Z_]*API_KEY=)/i.test(key)) {
-    throw new SafeError('invalid_key_format', 'Key file must contain only the token, without quotes, assignments or header prefixes');
-  }
-  return key;
 }
 
 export class EvidenceService {
@@ -138,51 +125,15 @@ export class EvidenceService {
     if (!packed.items.length) return { ...local, reason: 'request_limit', scoredIndices: [] };
     const key = await protectedKey(this.home);
     if (!key) return { ...local, reason: 'key_missing' };
-    let reservation, providerStatus, sent = false;
+    let responseBody;
     try {
-      let responseBody;
       const ranked = await rankWithJev(cleanQuery, cleanRequirements, packed.items, {
         model: MODEL, preserveExcerpts: true, resultLimit: 8,
         ask: async (state, questions) => {
-          const body = JSON.stringify({ model: MODEL, state, questions });
-          if (Buffer.byteLength(body) > LIMITS.requestBytes) throw new SafeError('request_limit', 'Evidence packet exceeds the request limit; no partial scoring');
-          const currentConfig = await configuration(this.home);
-          await this.root({ workspaceRoot: root });
-          if (privacyIdentity(currentConfig) !== privacyIdentity(config)) throw new SafeError('privacy_changed', 'Privacy policy changed before dispatch; search again.');
-          reservation = this.store.reserve(currentConfig, this.purpose, root);
-          sent = true;
-          const response = await this.fetcher('https://api.typesafe.ai/v1/systemone', {
-            method: 'POST', headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
-            body, signal: AbortSignal.timeout(15000), redirect: 'error',
-          });
-          providerStatus = response.status;
-          if (response.status === 429) { this.store.halt('http_429'); throw new SafeError('halted', 'Jev quota limit: execution halted without retry'); }
-          if (!response.ok) {
-            await response.body?.cancel().catch(() => {});
-            throw new SafeError('provider_error', `Jev returned HTTP ${response.status}; local evidence retained`);
-          }
-          // Bound the response before parsing; never put response bodies in errors.
-          const reader = response.body?.getReader();
-          if (!reader) throw new SafeError('invalid_response', 'Jev returned no response body');
-          const chunks = []; let bytes = 0;
-          while (true) {
-            const { value, done } = await reader.read(); if (done) break;
-            bytes += value.length;
-            if (bytes > 256 * 1024) { await reader.cancel(); throw new SafeError('invalid_response', 'Jev response exceeded limit'); }
-            chunks.push(Buffer.from(value));
-          }
-          try { responseBody = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
-          catch { throw new SafeError('invalid_response', 'Invalid Jev response'); }
-          if (responseBody.model !== MODEL || !responseBody.answers || typeof responseBody.answers !== 'object' ||
-              Object.keys(responseBody.answers).sort().join('|') !== Object.keys(questions).sort().join('|') ||
-              !Object.values(responseBody.answers).every(answer => answer?.type === 'noul' && Number.isFinite(answer.noul) && answer.noul >= 0 && answer.noul <= 1) ||
-              !Number.isSafeInteger(responseBody.usage?.input_tokens) || !Number.isSafeInteger(responseBody.usage?.output_tokens) || responseBody.usage.output_tokens < 0) {
-            throw new SafeError('invalid_response', 'Jev model, answers or usage did not match the validated contract');
-          }
+          responseBody = await evaluate(this, { root, state, questions, privacy: privacyIdentity(config) });
           return responseBody;
         },
       });
-      this.store.settle(reservation, responseBody.usage);
       for (const item of ranked.scored) item.index = packed.indices[item.index];
       // selected holds references to scored entries, so indices are already mapped.
       const unscored = candidates.map((_, index) => index).filter(index => !packed.indices.includes(index));
@@ -203,11 +154,11 @@ export class EvidenceService {
       if (config.cache_enabled) this.store.cache(cacheKey, { keep, order, scoredIndices: packed.indices, requestLimited: unscored.length > 0 });
       return result;
     } catch (error) {
-      if (reservation) this.store.uncertain(reservation);
       const cause = error.cause instanceof SafeError ? error.cause : error;
-      if (cause.code === 'halted' || cause.code === 'usage_invalid') throw cause;
-      return { ...local, jevRequests: Number(sent), reason: cause.code === 'request_limit' ? 'request_limit' : cause instanceof SafeError ? cause.code : 'selection_failed', jevFailed: sent,
-        ...(Number.isInteger(providerStatus) ? { providerStatus } : {}) };
+      if (['halted', 'usage_invalid', 'accounting_unavailable', 'reservation_conflict'].includes(cause.code)) throw cause;
+      const requests = cause.jevRequests ?? Number(Boolean(responseBody));
+      return { ...local, jevRequests: requests, reason: cause instanceof SafeError ? cause.code : 'selection_failed', jevFailed: requests > 0,
+        ...(Number.isInteger(cause.providerStatus) ? { providerStatus: cause.providerStatus } : {}) };
     }
   }
 
@@ -329,6 +280,7 @@ export class EvidenceService {
   }
   search(input) { return this.investigate(input); }
   large(input) { return this.investigate(input, true); }
+  judge(input) { return judgeEvidence(this, input); }
   async list(input) {
     if (await lstat(join(this.home, 'halt.json')).catch(() => null)) throw new SafeError('halted', 'Quota halt active; no further evidence reads.');
     const session = this.store.getSession(input.sessionId, this.owner);
