@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { exec } from '../src/hardened-policy.mjs';
@@ -9,7 +9,17 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 
 test('offline package contains recovery runtime and survives isolated install, upgrade, rollback and uninstall', { timeout: 90000 }, async t => {
   const temp = await mkdtemp(join(tmpdir(), 'jev-package-'));
-  t.after(() => rm(temp, { recursive: true, force: true }));
+  t.after(async () => {
+    // Only test-owned directories are made removable; sealed runtime files stay read-only.
+    const writableDirectories = async path => {
+      await chmod(path, 0o700);
+      for (const entry of await readdir(path, { withFileTypes: true })) {
+        if (entry.isDirectory()) await writableDirectories(join(path, entry.name));
+      }
+    };
+    await writableDirectories(temp);
+    await rm(temp, { recursive: true, force: true });
+  });
   await writeFile(join(temp, 'user.npmrc'), '');
   await writeFile(join(temp, 'global.npmrc'), '');
   const env = { ...process.env, npm_config_userconfig: join(temp, 'user.npmrc'), npm_config_globalconfig: join(temp, 'global.npmrc'), npm_config_offline: 'true' };

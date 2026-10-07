@@ -205,3 +205,9 @@ and the checksum-pinned Gitleaks working-tree scan passes. Installed final relea
 Its installed-protocol acceptance passed in both workspaces through cache reuse,
 with zero additional calls/charges. The actual desktop previously verified55cbdc;
 final patched hash/hook acceptance and the two ordinary task observations remain.
+
+The first manual GitHub run passed the history secret scan but exposed a non-root
+test teardown failure: recursive deletion could not unlink a fixture sealed by
+the installer. Local root execution had masked it. Cleanup now makes only the
+test-owned temporary directories removable, never changing live release files or
+the immutability assertions. The CI result remains failed until its rerun passes.
