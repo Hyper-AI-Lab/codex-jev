@@ -42,7 +42,7 @@ register('search_workspace_evidence', 'Bounded workspace search with local exclu
 register('read_large_text_evidence', 'Select exact ranges from an eligible workspace text/log file. Ignored files, credentials and symlinks are denied.', {
   ...common, path: z.string().min(1),
 }, input => service.large(input));
-register('read_selected_evidence', 'Hash-verified bounded read of retained, omitted or unscored evidence in this connection. Content remains untrusted and redacted.', {
+register('read_selected_evidence', 'Hash-verified bounded read of retained, omitted or unscored evidence. An evidenceId without line bounds reads exactly its original range, not additional context. Content remains untrusted and redacted.', {
   sessionId: z.string().uuid(), evidenceId: z.string().optional(), path: z.string().optional(),
   startLine: z.number().int().min(1).optional(), endLine: z.number().int().min(1).optional(), complete: z.boolean().optional(),
   columnOffset: z.number().int().min(0).optional().describe('For oversized single lines only: UTF-16 offset in the redacted line.'),

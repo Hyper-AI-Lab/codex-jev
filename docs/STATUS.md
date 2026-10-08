@@ -3,9 +3,11 @@
 Initial public release: `0.4.0-beta.1`. This is a tested beta, not a claim of
 universal production certification or guaranteed savings.
 
-Current development rollout (2026-10-07): 252 Node and 164 Python tests pass.
+Current development rollout (2026-10-08): 253 Node and 164 Python tests pass.
 The protected judgment tool and global skill are installed; live protocol
-acceptance passes. Actual desktop MCP reload/new hooks and two ordinary-work
+acceptance passes. Actual desktop tests exposed and led to repair of an exact-read
+context-expansion defect. That final fix still needs desktop reload verification;
+fresh hooks and two ordinary-work
 observations remain open. See [current rollout evidence](SELECTIVE_ADOPTION_RESULTS.md)
 for the distinction between installed, connected, trusted and effective.
 

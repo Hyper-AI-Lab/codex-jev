@@ -95,6 +95,33 @@ test('crowded implementation ranges do not exclude different evidence sources fr
   assert.equal(new Set(records.map(item => item.evidenceId)).size, records.length);
 });
 
+test('reference-only reads stay within retained, omitted and unscored ranges', async t => {
+  const f = await fixture(t);
+  const lines = Array.from({ length: 240 }, (_, i) => `const handler_${i} = ${i};`);
+  await writeFile(join(f.root, 'logic.js'), lines.join('\n'));
+  f.service.select = async () => ({ mode: 'bypass', keep: [0], jevRequests: 0 });
+  const result = await f.service.search({ workspaceRoot: f.root, query: 'handler', candidateLimit: 2, resultLimit: 1 });
+  const refs = await f.service.list({ sessionId: result.sessionId });
+  assert.deepEqual(new Set(refs.evidence.map(item => item.disposition)), new Set(['retained', 'omitted', 'unscored']));
+  for (const disposition of ['retained', 'omitted', 'unscored']) {
+    const item = refs.evidence.find(row => row.disposition === disposition);
+    const read = await f.service.read({ sessionId: result.sessionId, evidenceId: item.evidenceId });
+    assert.deepEqual(read.lines, item.lines);
+    assert.equal(read.content, lines.slice(item.lines.start - 1, item.lines.end)
+      .map((line, index) => `${item.lines.start + index}: ${line}`).join('\n'));
+    assert.equal(read.hash, item.hash);
+  }
+  const preview = result.evidence[0];
+  assert.equal(preview.detailLevel, 'preview');
+  const input = { sessionId: result.sessionId, evidenceId: preview.evidenceId };
+  const recovered = await f.service.read(input);
+  assert.deepEqual(recovered.lines, preview.sourceLines);
+  const explicit = await f.service.read({ ...input, startLine: 20, endLine: 22 });
+  assert.deepEqual(explicit.lines, { start: 20, end: 22 });
+  const full = await f.service.read({ ...input, complete: true });
+  assert.deepEqual(full.lines, { start: 1, end: 240 });
+});
+
 test('oversized first evidence returns a usable reference and bounded single-line reads make progress', async t => {
   const f = await fixture(t), text = 'checkout ' + 'x'.repeat(40000);
   await writeFile(join(f.root, 'output.log'), text);

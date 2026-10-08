@@ -73,7 +73,7 @@ maintenance attempt failed after shutdown and must never be replayed.
 | 4 | Offline verified | 157 Python tests and 11 private updater tests; no maintenance executed |
 | 5 | Offline verified | 10 judgment cases and 20 focused transport/CLI/MCP/receipt checks |
 | 6 | Installed; skill visible to this conversation | Ownership and immutable hashes verified; descriptor appeared in desktop skill list |
-| 7 | Installed and live protocol verified; actual desktop reload pending | 252 Node / 164 Python pass; search/cache/read/judgment/isolation pass; no daemon restart |
+| 7 | Exact-read correction installed; final desktop reload and native callbacks pending | 253 Node / 164 Python pass; two-workspace installed-protocol checks pass; desktop574e21b verified before read correction |
 | 8 | Pending | Ordinary work only; no causal savings claim |
 
 ## Completion and Rollback
@@ -211,3 +211,22 @@ test teardown failure: recursive deletion could not unlink a fixture sealed by
 the installer. Local root execution had masked it. Cleanup now makes only the
 test-owned temporary directories removable, never changing live release files or
 the immutability assertions. The CI result remains failed until its rerun passes.
+
+### Step 7 Desktop Acceptance Follow-Up
+
+CI37704593331 passed for33e872e. The actual desktop verified574e21b and live
+search/cache/reference pagination. However, evidenceId-only reads expanded a
+12-line reference to120 lines. Correct this before closure: omitted bounds must
+default to the exact referenced range, with explicit bounds/complete/column
+reads preserved. Regression coverage must include retained, omitted, unscored
+and preview references. This repairs an in-scope progressive-disclosure defect;
+it is not a new benchmark campaign. Fresh native callbacks remain unverified.
+
+The regression failed with end=120 instead of12, then passed after reference-only
+defaults were narrowed. All253 Node/164 Python tests pass; lint, package checks,
+Ruff, compile, audit and secret scan pass. Installed4c4f79e; installed-protocol
+checks now return12lines for retained and omitted references, with cached
+search/judgment and second-workspace bypass, no new charges. Actual desktop
+reload and native hook review were requested. Full measurement/report details
+are in SELECTIVE_ADOPTION_RESULTS.md; source and runtime checkpoints remain
+separate from effectiveness qualification.

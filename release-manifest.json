@@ -21,8 +21,8 @@
       "sha256": "246947cc1f8b8e7fcb41ef47ffb2b7a95ecd1e7349a6c0231704f758be717ce9"
     },
     "dist/server.mjs": {
-      "bytes": 1486431,
-      "sha256": "f967b19f02cd6e789001ef5f5bedc965b89892c75511febbfd6b43daf1e5ea81"
+      "bytes": 1486610,
+      "sha256": "99c28058c562cb1544ff38d682c23d215ba391c222087b213d2dd91baa4c2e99"
     },
     "package.json": {
       "bytes": 2163,
@@ -205,8 +205,8 @@
       "sha256": "9925ee3e93821587511913196752ccc955fe1c2e4a5dd19c868777eb0e937037"
     },
     "src/hardened-service.mjs": {
-      "bytes": 26606,
-      "sha256": "f2549aaaa0bc3adf2a60e9866a9f285d32d18355ca986ccd95587f8cc4b5bfe0"
+      "bytes": 26712,
+      "sha256": "be95a52b5242ce4cc24aeba3c54e7f2776d681e6530732030fc5168c4bbb11b4"
     },
     "src/hardened-store.mjs": {
       "bytes": 17373,
@@ -229,8 +229,8 @@
       "sha256": "18c6e7f4919f5b071f6c6694242b18835793ac9f62e87d4c1bda0d5701391441"
     },
     "src/mcp-server.mjs": {
-      "bytes": 8247,
-      "sha256": "9a46d8202afcd3153b5f74cfd9e5be20f06e571b2363dd6e88d8bb775b2b5206"
+      "bytes": 8320,
+      "sha256": "c390ebb343d96d10e1c3a33f231c028cf36c82d9a1c2ff6dd5453afc5d24ee1a"
     },
     "src/measured-operation.mjs": {
       "bytes": 2763,

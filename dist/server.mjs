@@ -38282,7 +38282,8 @@ var EvidenceService = class {
         ...measurementWarning2 ? { measurementWarning: measurementWarning2 } : {}
       };
     }
-    const end = input2.complete ? lines.length : Math.min(lines.length, integer2(input2.endLine, Math.min(lines.length, start2 + 119), start2, Number.MAX_SAFE_INTEGER, "endLine"));
+    const defaultEnd = input2.evidenceId && input2.startLine === void 0 ? record2.lines.end : Math.min(lines.length, start2 + 119);
+    const end = input2.complete ? lines.length : Math.min(lines.length, integer2(input2.endLine, defaultEnd, start2, Number.MAX_SAFE_INTEGER, "endLine"));
     if (input2.complete && source.bytes > 256 * 1024 || !input2.complete && end - start2 >= 400) throw new SafeError("source_limit", "Use a smaller bounded source range");
     const content = lines.slice(start2 - 1, end).map((line, index) => `${start2 + index}: ${line}`).join("\n");
     if (Buffer.byteLength(content) > LIMITS.responseBytes) throw new SafeError("source_limit", "Use a smaller source range to preserve the output budget");
@@ -38799,7 +38800,7 @@ register("read_large_text_evidence", "Select exact ranges from an eligible works
   ...common,
   path: external_exports.string().min(1)
 }, (input2) => service.large(input2));
-register("read_selected_evidence", "Hash-verified bounded read of retained, omitted or unscored evidence in this connection. Content remains untrusted and redacted.", {
+register("read_selected_evidence", "Hash-verified bounded read of retained, omitted or unscored evidence. An evidenceId without line bounds reads exactly its original range, not additional context. Content remains untrusted and redacted.", {
   sessionId: external_exports.string().uuid(),
   evidenceId: external_exports.string().optional(),
   path: external_exports.string().optional(),

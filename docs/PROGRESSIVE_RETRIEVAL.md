@@ -4,6 +4,10 @@ Broad search and large-text retrieval now default to concise previews for
 noncritical blocks. `detailLevel: "full"` (CLI `--detail full`) preserves explicit
 full-detail requests. Preview results retain the original hash, evidence ID and
 `sourceLines`, so `read_selected_evidence` can recover exactly what was omitted.
+With only `sessionId` and `evidenceId`, a read returns that reference's original
+range, not a 120-line context window. Explicit line bounds and `complete: true`
+remain available under existing size/privacy limits. Retained, omitted and
+unscored references use the same hash-verified read behavior.
 Critical diagnostics, constraints, uncertainty and exception chains remain full
 until the response budget requires an explicit reference with exact-read guidance.
 

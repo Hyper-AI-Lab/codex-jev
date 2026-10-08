@@ -329,7 +329,8 @@ export class EvidenceService {
         columns: { start: offset, end, unit: 'redacted_line_utf16' }, nextColumnOffset: end < line.length ? end : null,
         ...(measurementWarning ? { measurementWarning } : {}) };
     }
-    const end = input.complete ? lines.length : Math.min(lines.length, integer(input.endLine, Math.min(lines.length, start + 119), start, Number.MAX_SAFE_INTEGER, 'endLine'));
+    const defaultEnd = input.evidenceId && input.startLine === undefined ? record.lines.end : Math.min(lines.length, start + 119);
+    const end = input.complete ? lines.length : Math.min(lines.length, integer(input.endLine, defaultEnd, start, Number.MAX_SAFE_INTEGER, 'endLine'));
     if ((input.complete && source.bytes > 256 * 1024) || (!input.complete && end - start >= 400)) throw new SafeError('source_limit', 'Use a smaller bounded source range');
     const content = lines.slice(start - 1, end).map((line, index) => `${start + index}: ${line}`).join('\n');
     if (Buffer.byteLength(content) > LIMITS.responseBytes) throw new SafeError('source_limit', 'Use a smaller source range to preserve the output budget');
