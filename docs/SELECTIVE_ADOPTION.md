@@ -68,12 +68,12 @@ maintenance attempt failed after shutdown and must never be replayed.
 | Step | State | Evidence |
 | --- | --- | --- |
 | 1 | Complete | Source/live baseline and checkpoint verified; 232 Node and 146 Python tests pass |
-| 2 | Installed; history repair verified; automatic callbacks pending | 291 backlogged numeric observations recovered; six skipped records explicit |
+| 2 | Installed; automatic collection and same-turn attribution verified | 419 numeric observations; seven oversized-record gaps remain explicit |
 | 3 | Offline verified | 50 provider/privacy/entrypoint tests; no second provider client |
 | 4 | Offline verified | 157 Python tests and 11 private updater tests; no maintenance executed |
-| 5 | Offline verified | 10 judgment cases and 20 focused transport/CLI/MCP/receipt checks |
+| 5 | Offline and live access/cache verified | 10 judgment cases, protected desktop check, cached same-turn judgment receipt |
 | 6 | Installed; skill visible to this conversation | Ownership and immutable hashes verified; descriptor appeared in desktop skill list |
-| 7 | Exact-read correction installed; final desktop reload and native callbacks pending | 253 Node / 164 Python pass; two-workspace installed-protocol checks pass; desktop574e21b verified before read correction |
+| 7 | Installed and actual desktop connection verified | 253 Node / 164 Python pass; two-workspace protocol checks; desktop4c4f79e exact reads and six native acceptance receipts verified |
 | 8 | Pending | Ordinary work only; no causal savings claim |
 
 ## Completion and Rollback

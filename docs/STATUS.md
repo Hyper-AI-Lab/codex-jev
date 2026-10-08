@@ -6,8 +6,8 @@ universal production certification or guaranteed savings.
 Current development rollout (2026-10-08): 253 Node and 164 Python tests pass.
 The protected judgment tool and global skill are installed; live protocol
 acceptance passes. Actual desktop tests exposed and led to repair of an exact-read
-context-expansion defect. That final fix still needs desktop reload verification;
-fresh hooks and two ordinary-work
+context-expansion defect. The corrected release now passes actual desktop reads,
+fresh startup/prompt/tool hooks and same-turn receipt verification. Two ordinary-work
 observations remain open. See [current rollout evidence](SELECTIVE_ADOPTION_RESULTS.md)
 for the distinction between installed, connected, trusted and effective.
 
@@ -28,7 +28,7 @@ the offline suite does not require Codex or its credentials to be installed.
 | Mac-local / Windows | Mac-local unverified; Windows unsupported |
 | Jev access | Prior live requests succeeded on the private deployment; public users supply their own key/caps |
 | Native hooks | Generated and tested; each user grants native trust independently |
-| Native ordinary-work token telemetry | Numeric history fallback now observed; 322 retained observations and six explicit gaps; no complete-task savings attribution |
+| Native ordinary-work token telemetry | Automatic history collection observed; 419 numeric observations and seven explicit gaps at verification; six validation receipts verified, not ordinary-task savings evidence |
 | Net cost, token and speed improvement | Not established; no generalized percentage claim |
 
 ## What the interrupted comparison does and does not show

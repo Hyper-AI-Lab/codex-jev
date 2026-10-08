@@ -12,8 +12,9 @@
 - Pin MCP SDK1.31.0 for GHSA-6qxp-vccf-f47h; npm audit reports no vulnerabilities.
 - Fix reference-only exact reads that unnecessarily expanded a 12-line evidence
   range into 120 lines; preserve explicit ranges and complete/column reads.
-- Verified Linux rollout; desktop reconnect and ordinary-work acceptance remain
-  open. No token, subscription-quota or coding-speed savings claim.
+- Verified Linux rollout and actual desktop exact reads with fresh native receipts;
+  two ordinary-work observations remain open. No token, subscription-quota or
+  coding-speed savings claim.
 
 ## 0.4.0-beta.1
 

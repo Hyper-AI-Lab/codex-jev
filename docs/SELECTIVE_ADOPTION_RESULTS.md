@@ -15,8 +15,8 @@ benchmark was restarted and no native model run was launched for acceptance.
 | Global skill | Installed ownership verified; visible and readable in the actual conversation |
 | Live protected protocol | Search, cache, exact read, bounded judgment and isolation pass |
 | Two workspaces | Integration repository and application repository accepted; cross-root request denied |
-| Actual desktop MCP | Security-patched 574e21b verified; subsequent exact-read fix 4c4f79e needs reload verification |
-| New native hooks | Trust not modified; post-upgrade callbacks still require verification |
+| Actual desktop MCP | Corrected 4c4f79e verified through actual connection; exact reference reads pass |
+| New native hooks | Owner reviewed; fresh startup/prompt/tool callbacks and six same-turn acceptance receipts verified |
 | Mac-local installation | Not tested |
 
 The full suite found and reproduced a refactor regression before installation:
@@ -92,12 +92,11 @@ history totals. No source text, prompt or raw telemetry body enters reports.
 
 ## Remaining Acceptance
 
-1. Reconnect the actual desktop MCP and verify the exact-read update's release hash.
-2. Review changed Jev hook definitions in native Codex, then verify real callbacks
-   and history/receipt collection without fabricating trust or events.
-3. Verify actual desktop search/cache/read/judgment attribution where supported.
-4. Observe the next two naturally occurring development tasks. Report missing
-   coverage and overhead plainly; do not manufacture tasks or causal savings.
+Observe the next two naturally occurring development tasks. Report native usage,
+follow-up reads, hook overhead, correctness and missing coverage plainly. Do not
+manufacture tasks, restart benchmarks or infer causal savings from observations.
+The reconnect, exact-read and same-turn attribution checks have now passed, as
+recorded below. Mac-local installation and universal hook coverage are not claimed.
 
 The application, its schedules and services, native model choices, authentication,
 Google resources and local inference were not changed. Rollback preserves accounting
@@ -146,3 +145,30 @@ Prior checkpoint 33e872e passed [GitHub CI37704593331](https://github.com/Hyper-
 The exact-read correction receives a separate CI run. Two ordinary development
 tasks and fresh native hook/receipt coverage remain pending; no generalized token,
 cost or speed improvement is asserted.
+
+## Reconnect Acceptance
+
+After the owner reconnected and reviewed the changed hooks, the actual desktop
+reported immutable release `4c4f79e` with the matching skill. The retained and omitted
+references both returned exactly 12 lines with matching source hashes. Cached search
+took 522 ms and cached judgment 228 ms; neither contacted the provider. No additional
+paid calls or native comparison runs were made.
+
+Native receipts verified all six operations (status, search, reference listing,
+two exact reads and judgment) against the same actual turn and corrected bundle.
+The two follow-up reads returned 1,881 content bytes in total. These are validation
+checks, explicitly excluded from ordinary-work conclusions despite the connection's
+ordinary origin tag. Response envelopes and hooks add overhead; these numbers are
+not end-to-end task latency or native input-token savings.
+
+Fresh SessionStart, UserPromptSubmit, PreToolUse and PostToolUse callbacks were
+observed. Automatic numeric history collection is current, with 419 observations
+at verification and seven oversized-record gaps totaling 15,518,999 bytes. No invalid
+numeric records were reported. Earlier gaps were preserved rather than reset;
+whole-task accounting is still incomplete. Compaction, interruption and session
+end were not artificially triggered, so observed native coverage remains bounded.
+
+No further reconnect is required for this release. No configuration, model,
+authentication, application service or daemon was changed during these checks.
+The runtime commit passed [CI37729172066](https://github.com/Hyper-AI-Lab/codex-jev/actions/runs/37729172066).
+The next milestone is ordinary-work observation, not another installation cycle.
