@@ -35,6 +35,31 @@ class InstallerTests(RuntimeCase):
     def install(self):
         return install(self.home, NODE, self.root)
 
+    def test_node_replacement_preserves_release_controls_and_owner_choices(self):
+        self.native("config.toml", 'model="owner-model"\nmodel_reasoning_effort="high"\n')
+        self.install()
+        manifest = self.read_state("installation.json")
+        config = tomllib.loads((self.home.codex / "config.toml").read_text())
+        preserved = {name: (self.home.codex / name).read_bytes()
+                     for name in ("hooks.json", "AGENTS.md")}
+        budget = self.read_state("config.json")
+        budget.update(validation_budget_usd=10, monthly_budget_usd=10, total_budget_usd=10)
+        self.state("config.json", budget)
+        replacement = self.base / "replacement-node"
+        # Exercise actual executable/version validation without downloading or using live state.
+        shutil.copy2(NODE, replacement)
+        result = install(self.home, replacement, self.root)
+        self.assertTrue(result["installed"])
+        config["mcp_servers"]["jev_context"]["command"] = str(replacement)
+        self.assertEqual(tomllib.loads((self.home.codex / "config.toml").read_text()), config)
+        after = self.read_state("installation.json")
+        self.assertEqual(after["release_id"], manifest["release_id"])
+        self.assertEqual(after["entrypoint"], manifest["entrypoint"])
+        self.assertEqual(after["node"], str(replacement))
+        self.assertEqual(self.read_state("config.json"), budget)
+        for name, contents in preserved.items():
+            self.assertEqual((self.home.codex / name).read_bytes(), contents)
+
     def test_lifecycle_timeout_limits_and_legacy_upgrade_preserve_trust(self):
         self.install()
         hooks_path = self.home.codex / "hooks.json"
